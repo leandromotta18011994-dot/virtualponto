@@ -49,7 +49,7 @@ export function summarizeDay(entries: Entry[], dailyMinutes: number, now = new D
       if (e.kind === "saida_almoco") lunchAt = t;
     }
   }
-  const isToday = sorted.length > 0 && dayKey(sorted[0].recorded_at) === dayKey(now);
+  const isToday = sorted.length > 0 && dayKey(sorted[0]!.recorded_at) === dayKey(now);
   const open = inAt !== null;
   if (open && isToday) worked += (now.getTime() - inAt!) / 60000;
   if (lunchAt !== null && isToday) lunch += (now.getTime() - lunchAt) / 60000;
@@ -78,6 +78,6 @@ export function nextKinds(today: Entry[]): EntryKind[] {
 }
 
 export function fmtDay(key: string) {
-  const [y, m, d] = key.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = key.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
 }

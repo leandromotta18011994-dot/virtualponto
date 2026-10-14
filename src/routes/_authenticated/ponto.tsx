@@ -22,6 +22,7 @@ function Ponto() {
   const daily = me?.profile?.daily_minutes ?? 480;
   const s = summarizeDay(today, daily, now);
   const options = nextKinds(today);
+  const primary = options[0]!;
 
   const punch = useMutation({
     mutationFn: async (kind: EntryKind) => {
@@ -55,18 +56,18 @@ function Ponto() {
       <section className="space-y-3">
         <button
           disabled={punch.isPending || !me}
-          onClick={() => punch.mutate(options[0])}
+          onClick={() => punch.mutate(primary)}
           className="punch-shadow active:punch-shadow-pressed w-full rounded-2xl bg-primary py-7 text-2xl font-bold text-primary-foreground transition active:translate-y-1 disabled:opacity-60"
         >
-          Registrar {KIND_LABEL[options[0]]}
+          Registrar {KIND_LABEL[primary]}
         </button>
         {options[1] && (
           <button
             disabled={punch.isPending}
-            onClick={() => punch.mutate(options[1])}
+            onClick={() => punch.mutate(options[1]!)}
             className="w-full rounded-xl border bg-card py-3 text-sm font-medium"
           >
-            Encerrar sem almoço ({KIND_LABEL[options[1]]})
+            Encerrar sem almoço ({KIND_LABEL[options[1]!]})
           </button>
         )}
       </section>
