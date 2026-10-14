@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Banco de Horas</string>
+    <string name="title_activity_main">Banco de Horas</string>
+    <string name="package_name">app.virtualponto.bancodehoras</string>
+    <string name="custom_url_scheme">app.virtualponto.bancodehoras</string>
+</resources>
