@@ -7,7 +7,20 @@ import { useEntries, useMe } from "@/lib/data";
 import { dayKey, fmtMin, fmtTime, KIND_LABEL, nextKinds, summarizeDay, type EntryKind } from "@/lib/time";
 
 export const Route = createFileRoute("/_authenticated/ponto")({
-  head: () => ({ meta: [{ title: "Registrar ponto — Banco de Horas" }, { name: "description", content: "Registre entrada, almoço e saída." }] }),
+  head: () => ({
+    meta: [
+      { title: "Registrar ponto — Banco de Horas" },
+      { name: "description", content: "Registre entrada, almoço e saída e acompanhe suas horas trabalhadas e extras em tempo real." },
+      { property: "og:title", content: "Registrar ponto — Banco de Horas" },
+      { property: "og:description", content: "Bata o ponto, controle o almoço e acompanhe seu banco de horas." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://virtualponto.lovable.app/ponto" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Registrar ponto — Banco de Horas" },
+      { name: "twitter:description", content: "Bata o ponto, controle o almoço e acompanhe seu banco de horas." },
+    ],
+    links: [{ rel: "canonical", href: "https://virtualponto.lovable.app/ponto" }],
+  }),
   component: Ponto,
 });
 
