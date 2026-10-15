@@ -56,7 +56,31 @@ oficial, é preciso assinar o app:
 3. Escolha **release** e gere. O arquivo fica em
    `android/app/build/outputs/apk/release/app-release.apk`.
 
+## Problema comum: "Could not read script ..." (sync falha)
+
+Se o Android Studio mostra **"Gradle project sync failed"** com um erro
+"Could not read script '...\capacitor-cordova-android-plugins\cordova.variables.gradle'",
+o projeto baixado ainda não passou pela preparação — algumas pastas são criadas
+por um comando e não vêm no download. Resolva assim (uma vez só):
+
+1. **Não deixe o projeto dentro de OneDrive/Google Drive** — mova a pasta para
+   um caminho simples como `C:\bancodehoras`. Pastas sincronizadas na nuvem
+   travam o Gradle.
+2. Instale o **Node.js**: https://nodejs.org (versão LTS; next, next, finish).
+3. Abra o terminal **na pasta do projeto**: abra a pasta no Explorer, clique na
+   barra de endereço, digite `powershell` e aperte Enter.
+4. Rode os dois comandos (o primeiro demora alguns minutos):
+   ```powershell
+   npm install
+   npx cap sync android
+   ```
+5. Volte ao Android Studio e clique no elefantinho (**Sync Project with Gradle
+   Files**) ou **File > Sync Project with Gradle Files**.
+
+Se o erro citar outro arquivo, mande uma foto da tela de erro completa.
+
 ## Observações
+
 
 - O app aponta para `https://virtualponto.lovable.app`. Se quiser que ele abra um endereço
   próprio (domínio da empresa), mude `server.url` em `capacitor.config.ts` e rode
