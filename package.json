@@ -11,7 +11,10 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "apk:sync": "bun run build && bunx cap sync android",
+    "apk:open": "bunx cap open android",
+    "apk:build": "cd android && ./gradlew assembleDebug"
   },
   "overrides": {
     "rolldown": "1.2.1"
