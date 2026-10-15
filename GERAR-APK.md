@@ -66,3 +66,14 @@ oficial, é preciso assinar o app:
   **Gradle > :app > Tasks > android > signingReport**).
 - Para testar em um aparelho físico conectado por cabo USB, basta ativar a
   **depuração USB** no celular e clicar no botão **Run** (triângulo verde) no Android Studio.
+
+## Versão assinada para a Play Store
+
+1. **Criar a chave (uma vez só):** no terminal, na pasta do projeto: `bun run apk:keystore`. Responda nome/empresa e crie uma senha. Gera `android/banco-de-horas.jks`.
+   > Guarde esse arquivo e a senha em local seguro. Sem eles você nunca mais consegue atualizar o app na Play Store.
+2. Copie `android/keystore.properties.example` para `android/keystore.properties` e coloque sua senha.
+3. **Gerar o pacote da Play Store (.aab):** `bun run aab:release` → arquivo em `android/app/build/outputs/bundle/release/app-release.aab`.
+   (APK assinado, se precisar: `bun run apk:release` → `android/app/build/outputs/apk/release/`.)
+   Pelo Android Studio também dá: **Build > Generate Signed Bundle / APK > Android App Bundle**.
+4. **Enviar:** play.google.com/console (taxa única de US$ 25) → Criar app → Produção → Criar versão → enviar o `.aab`. Preencha ficha da loja, política de privacidade e classificação.
+5. **Atualizações:** aumente `versionCode` (ex.: 2) e `versionName` em `android/app/build.gradle` antes de cada novo envio.
