@@ -14,7 +14,10 @@
     "test:watch": "vitest",
     "apk:sync": "bun run build && bunx cap sync android",
     "apk:open": "bunx cap open android",
-    "apk:build": "cd android && ./gradlew assembleDebug"
+    "apk:build": "cd android && ./gradlew assembleDebug",
+    "apk:keystore": "keytool -genkeypair -v -keystore android/banco-de-horas.jks -alias bancodehoras -keyalg RSA -keysize 2048 -validity 10000",
+    "aab:release": "bun run apk:sync && cd android && ./gradlew bundleRelease",
+    "apk:release": "bun run apk:sync && cd android && ./gradlew assembleRelease"
   },
   "overrides": {
     "rolldown": "1.2.1"
