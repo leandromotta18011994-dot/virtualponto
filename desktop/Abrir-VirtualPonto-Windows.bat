@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0.."
 title Virtual Ponto - Desktop
 echo ========================================================
 echo         VIRTUAL PONTO - INICIALIZADOR WINDOWS
