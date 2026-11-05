@@ -4,9 +4,9 @@ import { Clock, Coffee, TrendingUp, Users } from "lucide-react";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Banco de Horas — Controle de ponto da equipe" },
+      { title: "Banco de Horas – Controle de ponto da equipe" },
       { name: "description", content: "Registre entrada, almoço e saída e acompanhe horas trabalhadas e extras." },
-      { property: "og:title", content: "Banco de Horas — Controle de ponto da equipe" },
+      { property: "og:title", content: "Banco de Horas – Controle de ponto da equipe" },
       { property: "og:description", content: "Registre entrada, almoço e saída e acompanhe horas trabalhadas e extras." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -24,7 +24,7 @@ function Index() {
   ];
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col px-6 py-10">
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">● Ponto</p>
+      <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">⏱ Ponto</p>
       <h1 className="mt-6 text-5xl font-bold leading-[1.05]">Cada minuto da equipe, no lugar certo.</h1>
       <p className="mt-4 text-muted-foreground">Banco de horas, almoço e horas extras sem planilha.</p>
       <Link to="/ponto" className="punch-shadow mt-8 rounded-2xl bg-primary py-5 text-center text-lg font-bold text-primary-foreground">

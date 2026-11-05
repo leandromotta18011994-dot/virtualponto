@@ -80,7 +80,7 @@ export function useMe() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        throw new Error("Sem sessão");
+        throw new Error("Sem sessão ativa");
       }
 
       const [{ data: profile }, { data: roles }] = await Promise.all([
@@ -129,7 +129,6 @@ export function useEntries(userId: string | undefined, sinceDays = 31) {
           .order("recorded_at", { ascending: false });
 
         if (!error && data) {
-          // Mescla com locais se houver
           return data as Entry[];
         }
       } catch {}
@@ -202,7 +201,7 @@ export function useWorkSchedules() {
         }
       }
 
-      // Default inicial
+      // Padrão inicial com acentuação correta
       return [
         {
           id: "default-schedule",

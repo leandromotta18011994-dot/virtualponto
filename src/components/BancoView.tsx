@@ -71,7 +71,7 @@ export function BancoView({
                 {d.entries.map((e) => (
                   <span key={e.id} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
                     {KIND_LABEL[e.kind]} <b className="font-mono">{fmtTime(e.recorded_at)}</b>
-                    {e.edited_at && <span className="text-yellow-500 ml-0.5">✎</span>}
+                    {e.edited_at && <span className="text-yellow-500 ml-0.5" title="Editado">✎</span>}
                     {canEdit && (
                       <button
                         aria-label="Remover registro"
