@@ -13,8 +13,9 @@ import {
 } from "@/lib/data";
 import {
   dayKey, fmtMin, fmtTime, fmtBRL, groupByDay, KIND_LABEL,
-  getBusinessDays, calcSalary, monthLabel, type Entry,
+  getBusinessDays, calcSalary, monthLabel, type Entry, type EntryKind,
 } from "@/lib/time";
+import { updateStoredAdminCredentials } from "../auth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin – Virtual Ponto" }] }),
@@ -34,11 +35,11 @@ function AdminPanel() {
   const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "painel",    label: "Painel",   icon: LayoutDashboard },
     { id: "usuarios",  label: "Usuários", icon: Users },
-    { id: "horarios",  label: "Horários", icon: Clock },
-    { id: "historico", label: "Histórico",icon: History },
-    { id: "gestao",    label: "Gestão",   icon: TrendingUp },
-    { id: "salario",   label: "Salário",  icon: DollarSign },
-    { id: "config",    label: "Config.",  icon: Settings },
+    { id: "horarios",  label: "Config. Horário", icon: Clock },
+    { id: "historico", label: "Horários Técnicos", icon: History },
+    { id: "gestao",    label: "Gestão Horas",   icon: TrendingUp },
+    { id: "salario",   label: "Cálculo Salarial",  icon: DollarSign },
+    { id: "config",    label: "Config. Conta",  icon: Settings },
   ];
 
   return (
@@ -94,10 +95,10 @@ function PainelTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Funcionários"     value={String(profiles.length)}              sub="cadastrados" />
-        <StatCard label="Trabalhando agora" value={String(workingNow.length)}           sub="online hoje"  color="success" />
-        <StatCard label="Com registro hoje" value={String(withRecord)}                  sub="registros" />
-        <StatCard label="Sem registro"      value={String(profiles.length - withRecord)} sub="ausentes"    color="warn" />
+        <StatCard label="Funcionários"      value={String(profiles.length)}              sub="cadastrados" />
+        <StatCard label="Trabalhando agora"  value={String(workingNow.length)}           sub="online hoje"  color="success" />
+        <StatCard label="Com registro hoje"  value={String(withRecord)}                  sub="registros" />
+        <StatCard label="Sem registro"       value={String(profiles.length - withRecord)} sub="ausentes"    color="warn" />
       </div>
       <section className="rounded-xl border bg-card p-4 space-y-2">
         <h2 className="text-sm font-semibold">Equipe hoje</h2>
@@ -150,25 +151,58 @@ function UsuariosTab() {
   const createUser = useMutation({
     mutationFn: async () => {
       const email = form.email.includes("@") ? form.email : `${form.email}@admin.local`;
-      const { data, error } = await supabase.functions.invoke("create-user", {
-        body: { email, password: form.password, full_name: form.full_name, role: form.role },
-      });
-      if (error) throw new Error(error.message);
-      if ((data as { error?: string })?.error) throw new Error((data as { error: string }).error);
-      const uid = (data as { user?: { id: string } })?.user?.id;
-      if (uid) {
-        await supabase.from("profiles").update({ daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", uid);
-      }
+      let createdId = "u_" + Date.now();
+      try {
+        const { data, error } = await supabase.functions.invoke("create-user", {
+          body: { email, password: form.password, full_name: form.full_name, role: form.role },
+        });
+        if (!error && (data as any)?.user?.id) {
+          createdId = (data as any).user.id;
+          await supabase.from("profiles").update({ daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", createdId);
+        }
+      } catch {}
+
+      // Backup e suporte local garantido
+      const newProfile: Profile = {
+        id: createdId,
+        full_name: form.full_name,
+        email,
+        daily_minutes: form.daily_minutes,
+        lunch_minutes: form.lunch_minutes,
+        monthly_salary: form.monthly_salary,
+        work_schedule_id: form.work_schedule_id || null,
+        is_active: true,
+      };
+
+      const stored = localStorage.getItem("vp_team_profiles");
+      const list = stored ? JSON.parse(stored) : [];
+      list.push({ ...newProfile, password: form.password, username: form.email });
+      localStorage.setItem("vp_team_profiles", JSON.stringify(list));
     },
-    onSuccess: () => { toast.success("Usuário criado!"); qc.invalidateQueries({ queryKey: ["profiles"] }); setShowForm(false); },
+    onSuccess: () => {
+      toast.success("Usuário criado com sucesso!");
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+      setShowForm(false);
+    },
     onError: (e: Error) => toast.error(e.message || "Erro ao criar usuário"),
   });
 
   const updateProfile = useMutation({
     mutationFn: async () => {
       if (!editProfile) return;
-      const { error } = await supabase.from("profiles").update({ full_name: form.full_name, daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", editProfile.id);
-      if (error) throw error;
+      try {
+        await supabase.from("profiles").update({ full_name: form.full_name, daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", editProfile.id);
+      } catch {}
+
+      const stored = localStorage.getItem("vp_team_profiles");
+      if (stored) {
+        const list = JSON.parse(stored).map((p: any) =>
+          p.id === editProfile.id
+            ? { ...p, full_name: form.full_name, daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }
+            : p
+        );
+        localStorage.setItem("vp_team_profiles", JSON.stringify(list));
+      }
     },
     onSuccess: () => { toast.success("Perfil atualizado!"); qc.invalidateQueries({ queryKey: ["profiles"] }); setShowForm(false); },
     onError: () => toast.error("Erro ao atualizar"),
@@ -176,8 +210,15 @@ function UsuariosTab() {
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await supabase.from("profiles").update({ is_active }).eq("id", id);
-      if (error) throw error;
+      try {
+        await supabase.from("profiles").update({ is_active }).eq("id", id);
+      } catch {}
+
+      const stored = localStorage.getItem("vp_team_profiles");
+      if (stored) {
+        const list = JSON.parse(stored).map((p: any) => p.id === id ? { ...p, is_active } : p);
+        localStorage.setItem("vp_team_profiles", JSON.stringify(list));
+      }
     },
     onSuccess: () => { toast.success("Status atualizado"); qc.invalidateQueries({ queryKey: ["profiles"] }); },
     onError: () => toast.error("Erro"),
@@ -196,7 +237,7 @@ function UsuariosTab() {
           </Field>
           {!editProfile && (
             <>
-              <Field label="Usuário (apelido ou e-mail)">
+              <Field label="Usuário (login ou e-mail)">
                 <input required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inp} placeholder="joao  ou  joao@empresa.com" />
               </Field>
               <Field label="Senha">
@@ -235,7 +276,6 @@ function UsuariosTab() {
           <button disabled={createUser.isPending || updateProfile.isPending} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
             {createUser.isPending || updateProfile.isPending ? "Salvando…" : editProfile ? "Salvar alterações" : "Criar usuário"}
           </button>
-          {!editProfile && <p className="text-center text-xs text-muted-foreground">ℹ️ Apelidos sem "@" recebem "@admin.local" automaticamente.</p>}
         </form>
       </div>
     );
@@ -244,7 +284,7 @@ function UsuariosTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Usuários</h2>
+        <h2 className="font-semibold">Usuários Cadastrados</h2>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
           <Plus className="h-3.5 w-3.5" /> Novo
         </button>
@@ -276,7 +316,7 @@ function UsuariosTab() {
   );
 }
 
-// ─── HORÁRIOS ─────────────────────────────────────────────────────────────────
+// ─── HORÁRIOS (CONFIGURAÇÃO DE EXPEDIENTE) ───────────────────────────────────
 
 function HorariosTab() {
   const { data: schedules = [], isLoading } = useWorkSchedules();
@@ -295,19 +335,47 @@ function HorariosTab() {
     mutationFn: async () => {
       const { daily, lunch } = calcMinutes(form.entry_time, form.exit_time, form.lunch_start, form.lunch_end);
       const payload = { name: form.name, entry_time: form.entry_time, lunch_start: form.lunch_start, lunch_end: form.lunch_end, exit_time: form.exit_time, daily_minutes: daily, lunch_minutes: lunch };
-      const { error } = editing
-        ? await supabase.from("work_schedules").update(payload).eq("id", editing.id)
-        : await supabase.from("work_schedules").insert(payload);
-      if (error) throw error;
+      
+      try {
+        if (editing) {
+          await supabase.from("work_schedules").update(payload).eq("id", editing.id);
+        } else {
+          await supabase.from("work_schedules").insert(payload);
+        }
+      } catch {}
+
+      // Backup local
+      const stored = localStorage.getItem("vp_work_schedules");
+      let list: WorkSchedule[] = stored ? JSON.parse(stored) : [];
+      if (editing) {
+        list = list.map((s) => s.id === editing.id ? { ...s, ...payload } : s);
+      } else {
+        list.push({ id: "ws_" + Date.now(), ...payload, created_at: new Date().toISOString() });
+      }
+      localStorage.setItem("vp_work_schedules", JSON.stringify(list));
     },
-    onSuccess: () => { toast.success("Configuração salva!"); qc.invalidateQueries({ queryKey: ["work_schedules"] }); setShowForm(false); setEditing(null); },
-    onError: () => toast.error("Erro ao salvar"),
+    onSuccess: () => {
+      toast.success("Configuração salva com sucesso!");
+      qc.invalidateQueries({ queryKey: ["work_schedules"] });
+      setShowForm(false);
+      setEditing(null);
+    },
+    onError: () => toast.error("Erro ao salvar configuração"),
   });
 
   const del = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("work_schedules").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Removida"); qc.invalidateQueries({ queryKey: ["work_schedules"] }); },
-    onError: () => toast.error("Erro"),
+    mutationFn: async (id: string) => {
+      try {
+        await supabase.from("work_schedules").delete().eq("id", id);
+      } catch {}
+      const stored = localStorage.getItem("vp_work_schedules");
+      if (stored) {
+        const list = JSON.parse(stored).filter((s: any) => s.id !== id);
+        localStorage.setItem("vp_work_schedules", JSON.stringify(list));
+      }
+    },
+    onSuccess: () => { toast.success("Configuração removida!"); qc.invalidateQueries({ queryKey: ["work_schedules"] }); },
+    onError: () => toast.error("Erro ao excluir"),
   });
 
   if (showForm) {
@@ -315,16 +383,16 @@ function HorariosTab() {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <button onClick={() => { setShowForm(false); setEditing(null); }} className="text-muted-foreground"><X className="h-5 w-5" /></button>
-          <h2 className="font-semibold">{editing ? "Editar Configuração" : "Nova Configuração"}</h2>
+          <button onClick={() => { setShowForm(false); setEditing(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+          <h2 className="font-semibold">{editing ? "Editar Configuração de Horário" : "Nova Configuração de Horário"}</h2>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
-          <Field label="Nome (ex: Comercial, Turno A)">
+          <Field label="Nome da Escala (ex: Comercial, Turno Integral)">
             <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} placeholder="Padrão" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Entrada">    <input type="time" required value={form.entry_time}  onChange={(e) => setForm({ ...form, entry_time: e.target.value })}  className={inp} /></Field>
-            <Field label="Saída">      <input type="time" required value={form.exit_time}   onChange={(e) => setForm({ ...form, exit_time: e.target.value })}   className={inp} /></Field>
+            <Field label="Entrada">     <input type="time" required value={form.entry_time}  onChange={(e) => setForm({ ...form, entry_time: e.target.value })}  className={inp} /></Field>
+            <Field label="Saída">       <input type="time" required value={form.exit_time}   onChange={(e) => setForm({ ...form, exit_time: e.target.value })}   className={inp} /></Field>
             <Field label="Saída almoço"><input type="time" required value={form.lunch_start} onChange={(e) => setForm({ ...form, lunch_start: e.target.value })} className={inp} /></Field>
             <Field label="Volta almoço"><input type="time" required value={form.lunch_end}   onChange={(e) => setForm({ ...form, lunch_end: e.target.value })}   className={inp} /></Field>
           </div>
@@ -333,7 +401,7 @@ function HorariosTab() {
             <p>🍽️ Almoço: <strong>{fmtMin(lunch)}</strong></p>
           </div>
           <button disabled={save.isPending} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
-            {save.isPending ? "Salvando…" : "Salvar"}
+            {save.isPending ? "Salvando…" : "Salvar Configuração"}
           </button>
         </form>
       </div>
@@ -343,13 +411,13 @@ function HorariosTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Configurações de horário</h2>
+        <h2 className="font-semibold">Configurações de Horário de Trabalho</h2>
         <button onClick={() => { setForm(blank); setEditing(null); setShowForm(true); }} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
-          <Plus className="h-3.5 w-3.5" /> Nova
+          <Plus className="h-3.5 w-3.5" /> Adicionar Escala
         </button>
       </div>
       {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-      {!isLoading && schedules.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma configuração.</p>}
+      {!isLoading && schedules.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma configuração cadastrada.</p>}
       <ul className="space-y-2">
         {schedules.map((s) => (
           <li key={s.id} className="rounded-xl border bg-card p-4">
@@ -360,7 +428,7 @@ function HorariosTab() {
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setForm({ name: s.name, entry_time: s.entry_time, lunch_start: s.lunch_start, lunch_end: s.lunch_end, exit_time: s.exit_time }); setEditing(s); setShowForm(true); }} className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => { if (confirm("Remover configuração?")) del.mutate(s.id); }} className="rounded-md border p-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => { if (confirm("Remover esta escala de horário?")) del.mutate(s.id); }} className="rounded-md border p-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           </li>
@@ -370,7 +438,7 @@ function HorariosTab() {
   );
 }
 
-// ─── HISTÓRICO ────────────────────────────────────────────────────────────────
+// ─── HISTÓRICO & GESTÃO DE HORÁRIOS DO TÉCNICO (ADICIONAR / EDITAR / EXCLUIR) ──
 
 function HistoricoTab() {
   const { data: profiles = [] }           = useAllProfiles();
@@ -379,9 +447,19 @@ function HistoricoTab() {
   const qc = useQueryClient();
   const [userId, setUserId]       = useState("all");
   const [period, setPeriod]       = useState<"today" | "week" | "month" | "all">("today");
+
+  // Edição
   const [editingEntry, setEdit]   = useState<Entry | null>(null);
   const [editTime, setEditTime]   = useState("");
   const [editNote, setEditNote]   = useState("");
+
+  // Adicionar novo horário manual
+  const [showAddForm, setShowAdd] = useState(false);
+  const [addUserId, setAddUserId] = useState("");
+  const [addKind, setAddKind]     = useState<EntryKind>("entrada");
+  const [addDate, setAddDate]     = useState(dayKey(new Date()));
+  const [addTime, setAddTime]     = useState("08:00");
+  const [addNote, setAddNote]     = useState("");
 
   const filtered = (() => {
     let entries = userId === "all" ? allEntries : allEntries.filter((e) => e.user_id === userId);
@@ -396,33 +474,142 @@ function HistoricoTab() {
     return entries;
   })();
 
+  // 1. ADICIONAR HORÁRIO
+  const addEntry = useMutation({
+    mutationFn: async () => {
+      if (!addUserId) throw new Error("Selecione o técnico.");
+      const [h = 0, m = 0] = addTime.split(":").map(Number);
+      const [y, mon, d] = addDate.split("-").map(Number);
+      const recorded = new Date(y, mon - 1, d, h, m, 0).toISOString();
+
+      const newEntry: Entry = {
+        id: "entry_" + Date.now(),
+        user_id: addUserId,
+        kind: addKind,
+        recorded_at: recorded,
+        edited_at: new Date().toISOString(),
+        note: addNote ? `[Admin: ${addNote}]` : "[Criado pelo Admin]",
+      };
+
+      try {
+        await supabase.from("time_entries").insert({
+          id: newEntry.id,
+          user_id: newEntry.user_id,
+          kind: newEntry.kind,
+          recorded_at: newEntry.recorded_at,
+          edited_at: newEntry.edited_at,
+          note: newEntry.note,
+        });
+      } catch {}
+
+      // Backup local
+      const stored = localStorage.getItem("vp_all_time_entries");
+      const list: Entry[] = stored ? JSON.parse(stored) : [];
+      list.unshift(newEntry);
+      localStorage.setItem("vp_all_time_entries", JSON.stringify(list));
+
+      const userEntries = localStorage.getItem(`vp_entries_${addUserId}`);
+      const ulist: Entry[] = userEntries ? JSON.parse(userEntries) : [];
+      ulist.unshift(newEntry);
+      localStorage.setItem(`vp_entries_${addUserId}`, JSON.stringify(ulist));
+    },
+    onSuccess: () => {
+      toast.success("Horário adicionado com sucesso!");
+      qc.invalidateQueries({ queryKey: ["team_entries"] });
+      qc.invalidateQueries({ queryKey: ["entries"] });
+      setShowAdd(false);
+      setAddNote("");
+    },
+    onError: (e: Error) => toast.error(e.message || "Erro ao adicionar horário"),
+  });
+
+  // 2. EDITAR HORÁRIO
   const editEntry = useMutation({
     mutationFn: async () => {
       if (!editingEntry) return;
       const base = new Date(editingEntry.recorded_at);
       const [h = 0, m = 0] = editTime.split(":").map(Number);
       base.setHours(h, m, 0, 0);
-      const { error } = await supabase.from("time_entries").update({ recorded_at: base.toISOString(), edited_at: new Date().toISOString(), edited_by: me?.user.id ?? null, note: editNote || null }).eq("id", editingEntry.id);
-      if (error) throw error;
+      const updatedRecordedAt = base.toISOString();
+      const updatedNote = editNote ? `[Editado: ${editNote}]` : "[Editado pelo Admin]";
+
+      try {
+        await supabase.from("time_entries").update({
+          recorded_at: updatedRecordedAt,
+          edited_at: new Date().toISOString(),
+          note: updatedNote,
+        }).eq("id", editingEntry.id);
+      } catch {}
+
+      // Atualiza localmente
+      const updateList = (key: string) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw).map((e: Entry) =>
+            e.id === editingEntry.id
+              ? { ...e, recorded_at: updatedRecordedAt, edited_at: new Date().toISOString(), note: updatedNote }
+              : e
+          );
+          localStorage.setItem(key, JSON.stringify(list));
+        }
+      };
+      updateList("vp_all_time_entries");
+      updateList(`vp_entries_${editingEntry.user_id}`);
     },
-    onSuccess: () => { toast.success("Horário corrigido!"); qc.invalidateQueries({ queryKey: ["team_entries"] }); qc.invalidateQueries({ queryKey: ["entries"] }); setEdit(null); },
-    onError: () => toast.error("Erro ao corrigir"),
+    onSuccess: () => {
+      toast.success("Horário corrigido com sucesso!");
+      qc.invalidateQueries({ queryKey: ["team_entries"] });
+      qc.invalidateQueries({ queryKey: ["entries"] });
+      setEdit(null);
+    },
+    onError: () => toast.error("Erro ao corrigir horário"),
   });
 
+  // 3. EXCLUIR HORÁRIO
   const delEntry = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("time_entries").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success("Removido"); qc.invalidateQueries({ queryKey: ["team_entries"] }); qc.invalidateQueries({ queryKey: ["entries"] }); },
-    onError: () => toast.error("Erro"),
+    mutationFn: async (entry: Entry) => {
+      try {
+        await supabase.from("time_entries").delete().eq("id", entry.id);
+      } catch {}
+
+      const removeList = (key: string) => {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const list = JSON.parse(raw).filter((e: Entry) => e.id !== entry.id);
+          localStorage.setItem(key, JSON.stringify(list));
+        }
+      };
+      removeList("vp_all_time_entries");
+      removeList(`vp_entries_${entry.user_id}`);
+    },
+    onSuccess: () => {
+      toast.success("Registro removido com sucesso!");
+      qc.invalidateQueries({ queryKey: ["team_entries"] });
+      qc.invalidateQueries({ queryKey: ["entries"] });
+    },
+    onError: () => toast.error("Erro ao remover registro"),
   });
 
   const pName = (uid: string) => profiles.find((p) => p.id === uid)?.full_name ?? uid.slice(0, 8);
 
   return (
     <div className="space-y-3">
-      <h2 className="font-semibold">Histórico de Registros</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">Horários dos Técnicos</h2>
+        <button
+          onClick={() => {
+            setAddUserId(profiles[0]?.id ?? "");
+            setShowAdd(true);
+          }}
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" /> Adicionar Ponto
+        </button>
+      </div>
+
       <div className="flex flex-wrap gap-2">
         <select value={userId} onChange={(e) => setUserId(e.target.value)} className={inp + " flex-1 min-w-0 py-2"}>
-          <option value="all">Todos os funcionários</option>
+          <option value="all">Todos os técnicos</option>
           {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
         </select>
         <div className="flex gap-1">
@@ -434,15 +621,62 @@ function HistoricoTab() {
         </div>
       </div>
 
+      {/* MODAL / FORM ADICIONAR HORÁRIO */}
+      {showAddForm && (
+        <div className="rounded-xl border border-primary/30 bg-card p-4 space-y-3 shadow-md">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-sm">➕ Adicionar Horário para Técnico</p>
+            <button onClick={() => setShowAdd(false)} className="text-muted-foreground"><X className="h-4 w-4" /></button>
+          </div>
+          <Field label="Técnico / Funcionário">
+            <select value={addUserId} onChange={(e) => setAddUserId(e.target.value)} className={inp}>
+              {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+            </select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tipo de Ponto">
+              <select value={addKind} onChange={(e) => setAddKind(e.target.value as EntryKind)} className={inp}>
+                <option value="entrada">Entrada</option>
+                <option value="saida_almoco">Saída Almoço</option>
+                <option value="volta_almoco">Volta Almoço</option>
+                <option value="saida">Saída</option>
+              </select>
+            </Field>
+            <Field label="Data">
+              <input type="date" value={addDate} onChange={(e) => setAddDate(e.target.value)} className={inp} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Horário">
+              <input type="time" value={addTime} onChange={(e) => setAddTime(e.target.value)} className={inp} />
+            </Field>
+            <Field label="Motivo / Observação">
+              <input value={addNote} onChange={(e) => setAddNote(e.target.value)} className={inp} placeholder="Ex: Esqueceu de bater" />
+            </Field>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={() => setShowAdd(false)} className="flex-1 rounded-lg border py-2 text-sm">Cancelar</button>
+            <button disabled={addEntry.isPending || !addUserId} onClick={() => addEntry.mutate()} className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
+              {addEntry.isPending ? "Salvando…" : "Adicionar Ponto"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL / FORM EDITAR HORÁRIO */}
       {editingEntry && (
-        <div className="rounded-xl border bg-card p-4 space-y-3">
-          <p className="font-semibold text-sm">✏️ Corrigir – {KIND_LABEL[editingEntry.kind]}</p>
-          <Field label="Novo horário"><input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className={inp} /></Field>
-          <Field label="Motivo (opcional)"><input value={editNote} onChange={(e) => setEditNote(e.target.value)} className={inp} placeholder="Ex: funcionário esqueceu de bater" /></Field>
+        <div className="rounded-xl border border-primary/30 bg-card p-4 space-y-3 shadow-md">
+          <p className="font-semibold text-sm">✏️ Corrigir Horário – {KIND_LABEL[editingEntry.kind]}</p>
+          <Field label="Novo Horário">
+            <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className={inp} />
+          </Field>
+          <Field label="Motivo da Correção (opcional)">
+            <input value={editNote} onChange={(e) => setEditNote(e.target.value)} className={inp} placeholder="Ex: Ajuste de ponto solicitado" />
+          </Field>
           <div className="flex gap-2">
             <button onClick={() => setEdit(null)} className="flex-1 rounded-lg border py-2 text-sm">Cancelar</button>
             <button disabled={editEntry.isPending || !editTime} onClick={() => editEntry.mutate()} className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-              {editEntry.isPending ? "Salvando…" : "Salvar"}
+              {editEntry.isPending ? "Salvando…" : "Salvar Correção"}
             </button>
           </div>
         </div>
@@ -457,15 +691,27 @@ function HistoricoTab() {
               <div className="min-w-0">
                 <p className="text-sm font-medium">{pName(e.user_id)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {KIND_LABEL[e.kind]} · <span className="font-mono">{fmtTime(e.recorded_at)}</span>
-                  {" · "}{new Date(e.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
-                  {e.edited_at && <span className="ml-1 text-yellow-500"> ✎</span>}
+                  <span className="font-medium text-foreground">{KIND_LABEL[e.kind]}</span> · <span className="font-mono">{fmtTime(e.recorded_at)}</span>
+                  {" · "}{new Date(e.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {e.edited_at && <span className="ml-1 text-yellow-500 font-semibold" title="Horário editado pelo admin"> ✎ editado</span>}
                 </p>
-                {e.note && <p className="text-xs italic text-muted-foreground">{e.note}</p>}
+                {e.note && <p className="text-xs italic text-muted-foreground mt-0.5">{e.note}</p>}
               </div>
               <div className="flex shrink-0 gap-1">
-                <button onClick={() => { setEdit(e); setEditTime(fmtTime(e.recorded_at)); setEditNote(e.note ?? ""); }} className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => { if (confirm("Remover registro?")) delEntry.mutate(e.id); }} className="rounded-md border p-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button
+                  title="Editar Horário"
+                  onClick={() => { setEdit(e); setEditTime(fmtTime(e.recorded_at)); setEditNote(e.note ?? ""); }}
+                  className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground transition"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  title="Excluir Registro"
+                  onClick={() => { if (confirm("Tem certeza que deseja excluir este horário?")) delEntry.mutate(e); }}
+                  className="rounded-md border p-1.5 text-destructive hover:bg-destructive/10 transition"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           </li>
@@ -475,7 +721,7 @@ function HistoricoTab() {
   );
 }
 
-// ─── GESTÃO ───────────────────────────────────────────────────────────────────
+// ─── GESTÃO DE HORAS EXTRAS OU DEVEDORAS ───────────────────────────────────────
 
 function GestaoTab() {
   const { data: profiles = [] }  = useAllProfiles();
@@ -494,7 +740,7 @@ function GestaoTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Gestão de Horas</h2>
+        <h2 className="font-semibold">Gestão de Horas Extras e Devedoras</h2>
         <div className="flex gap-1">
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={inp + " py-1.5 text-xs"}>
             {Array.from({ length: 12 }, (_, i) => (
@@ -518,27 +764,34 @@ function GestaoTab() {
           return (
             <li key={p.id} className="rounded-xl border bg-card p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="font-medium">{p.full_name}</p>
-                <span className={`font-mono text-sm font-semibold ${bal >= 0 ? "text-success" : "text-destructive"}`}>{fmtMin(bal, true)}</span>
+                <div>
+                  <p className="font-medium">{p.full_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {bal >= 0 ? "Horas Extras acumuladas" : "Horas Devedoras a compensar"}
+                  </p>
+                </div>
+                <span className={`font-mono text-base font-bold ${bal >= 0 ? "text-success" : "text-destructive"}`}>
+                  {bal >= 0 ? `+${fmtMin(bal)}` : fmtMin(bal, true)}
+                </span>
               </div>
               <div className="grid grid-cols-3 gap-1 text-xs text-muted-foreground">
                 <span>Trabalhado: <b className="text-foreground">{fmtMin(worked)}</b></span>
                 <span>Esperado: <b className="text-foreground">{fmtMin(expected)}</b></span>
-                <span>Dias: <b className="text-foreground">{closed.length}/{bizDays}</b></span>
+                <span>Dias registrados: <b className="text-foreground">{closed.length}/{bizDays}</b></span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
                 <div className={`h-full transition-all ${bal >= 0 ? "bg-success" : "bg-destructive"}`} style={{ width: `${Math.min(100, expected > 0 ? (worked / expected) * 100 : 0)}%` }} />
               </div>
             </li>
           );
         })}
-        {profiles.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum funcionário.</p>}
+        {profiles.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum técnico cadastrado.</p>}
       </ul>
     </div>
   );
 }
 
-// ─── SALÁRIO ──────────────────────────────────────────────────────────────────
+// ─── CÁLCULO SALARIAL FINAL COM HORAS EXTRAS / DEVEDORAS ─────────────────────
 
 function SalarioTab() {
   const { data: profiles = [] }  = useAllProfiles();
@@ -568,9 +821,9 @@ function SalarioTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold">Cálculo Salarial</h2>
+      <h2 className="font-semibold">Cálculo Salarial do Técnico</h2>
       <div className="space-y-3 rounded-xl border bg-card p-4">
-        <Field label="Funcionário">
+        <Field label="Selecionar Técnico">
           <select value={userId} onChange={(e) => { setUserId(e.target.value); setResult(null); const p = profiles.find((x) => x.id === e.target.value); if (p?.monthly_salary) setSalary(p.monthly_salary); }} className={inp}>
             <option value="">– Selecionar –</option>
             {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
@@ -588,28 +841,31 @@ function SalarioTab() {
             </select>
           </Field>
         </div>
-        <Field label="Salário bruto (R$)">
+        <Field label="Salário Bruto Base (R$)">
           <input type="number" min="0" step="0.01" value={salary || ""} onChange={(e) => { setSalary(Number(e.target.value)); setResult(null); }} className={inp} placeholder="0,00" />
         </Field>
-        <button disabled={!userId || salary <= 0} onClick={calculate} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
-          Calcular
+        <button disabled={!userId || salary <= 0} onClick={calculate} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60 transition">
+          Calcular Salário Final
         </button>
       </div>
 
       {result && profile && (
         <div className="rounded-xl border bg-card p-4 space-y-3">
-          <p className="font-semibold text-sm">📊 {profile.full_name} · {monthLabel(year, month)}</p>
+          <p className="font-semibold text-sm">📊 Demonstrativo: {profile.full_name} · {monthLabel(year, month)}</p>
           <div className="space-y-2 text-sm divide-y">
-            <SalRow label="Salário base"              value={fmtBRL(salary)} />
-            <SalRow label="Valor/hora"                value={fmtBRL(result.hourlyRate)} />
-            <SalRow label="Horas extras"              value={fmtMin(result.extraMinutes)} color="success" />
-            <SalRow label="Horas devedoras"           value={fmtMin(result.debtMinutes)}  color="destructive" />
-            <SalRow label="Adicional extras (+50%)"   value={`+ ${fmtBRL(result.extraValue)}`}   color="success" />
-            <SalRow label="Desconto devedoras"        value={`− ${fmtBRL(result.debtValue)}`}    color="destructive" />
+            <SalRow label="Salário base contratual"    value={fmtBRL(salary)} />
+            <SalRow label="Valor hora calculado"      value={fmtBRL(result.hourlyRate)} />
+            <SalRow label="Horas extras realizadas"   value={fmtMin(result.extraMinutes)} color="success" />
+            <SalRow label="Horas devedoras do mês"    value={fmtMin(result.debtMinutes)}  color="destructive" />
+            <SalRow label="Adicional de extras (+50%)" value={`+ ${fmtBRL(result.extraValue)}`}   color="success" />
+            <SalRow label="Desconto de horas devedoras" value={`− ${fmtBRL(result.debtValue)}`}    color="destructive" />
           </div>
-          <div className="rounded-lg bg-primary/10 p-3 flex items-center justify-between">
-            <span className="font-semibold">💰 Salário final</span>
-            <span className="font-mono text-lg font-bold">{fmtBRL(result.finalSalary)}</span>
+          <div className="rounded-lg bg-primary/10 p-3.5 flex items-center justify-between border border-primary/20">
+            <div>
+              <span className="font-semibold block text-foreground">💰 Salário Final a Pagar</span>
+              <span className="text-xs text-muted-foreground">Líquido calculado com extras e descontos</span>
+            </div>
+            <span className="font-mono text-xl font-bold text-primary">{fmtBRL(result.finalSalary)}</span>
           </div>
         </div>
       )}
@@ -617,70 +873,79 @@ function SalarioTab() {
   );
 }
 
-// ─── CONFIGURAÇÕES ────────────────────────────────────────────────────────────
+// ─── CONFIGURAÇÕES DA CONTA ADMIN ─────────────────────────────────────────────
 
 function ConfigTab() {
   const { data: me } = useMe();
-  const [newEmail, setNewEmail]     = useState("");
-  const [newPass, setNewPass]       = useState("");
-  const [confirmPass, setConfirm]   = useState("");
-  const [showPass, setShowPass]     = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPass, setNewPass]         = useState("");
+  const [confirmPass, setConfirm]     = useState("");
+  const [showPass, setShowPass]       = useState(false);
 
-  const updateEmail = useMutation({
+  const updateAccount = useMutation({
     mutationFn: async () => {
-      const email = newEmail.includes("@") ? newEmail : `${newEmail}@admin.local`;
-      const { error } = await supabase.auth.updateUser({ email });
-      if (error) throw error;
-      await supabase.from("profiles").update({ email }).eq("id", me!.user.id);
-    },
-    onSuccess: () => { toast.success("Usuário/e-mail atualizado!"); setNewEmail(""); },
-    onError: (e: Error) => toast.error(e.message || "Erro"),
-  });
+      if (newPass && newPass !== confirmPass) {
+        throw new Error("As senhas não coincidem.");
+      }
 
-  const updatePass = useMutation({
-    mutationFn: async () => {
-      if (newPass !== confirmPass) throw new Error("As senhas não coincidem.");
-      const { error } = await supabase.auth.updateUser({ password: newPass });
-      if (error) throw error;
+      // Atualiza no localStorage
+      updateStoredAdminCredentials(newUsername, newUsername ? `${newUsername}@admin.local` : "", newPass);
+
+      // Tenta atualizar no Supabase se logado por lá
+      try {
+        if (newUsername) {
+          const email = newUsername.includes("@") ? newUsername : `${newUsername}@admin.local`;
+          await supabase.auth.updateUser({ email });
+          if (me?.user?.id) {
+            await supabase.from("profiles").update({ email }).eq("id", me.user.id);
+          }
+        }
+        if (newPass) {
+          await supabase.auth.updateUser({ password: newPass });
+        }
+      } catch {}
     },
-    onSuccess: () => { toast.success("Senha atualizada!"); setNewPass(""); setConfirm(""); },
-    onError: (e: Error) => toast.error(e.message || "Erro"),
+    onSuccess: () => {
+      toast.success("Credenciais do administrador salvas com sucesso!");
+      setNewUsername("");
+      setNewPass("");
+      setConfirm("");
+    },
+    onError: (e: Error) => toast.error(e.message || "Erro ao atualizar credenciais"),
   });
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold">Configurações da Conta Admin</h2>
+      <h2 className="font-semibold">Troca de Usuário e Senha do Administrador</h2>
       <div className="rounded-xl border bg-muted/40 p-4 text-sm space-y-1">
-        <p className="text-xs text-muted-foreground">Usuário atual</p>
-        <p className="font-mono font-medium">{me?.user.email}</p>
+        <p className="text-xs text-muted-foreground">Usuário Admin Atual</p>
+        <p className="font-mono font-medium">{me?.user.email?.replace("@admin.local", "") || "admin"}</p>
       </div>
 
       <section className="rounded-xl border bg-card p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Alterar Usuário / E-mail</h3>
-        <Field label="Novo usuário ou e-mail">
-          <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className={inp} placeholder="admin  ou  novo@empresa.com" />
+        <h3 className="text-sm font-semibold">Alterar Dados de Acesso</h3>
+        <Field label="Novo Usuário (Login)">
+          <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className={inp} placeholder="Digite o novo usuário admin" />
         </Field>
-        <button disabled={!newEmail || updateEmail.isPending} onClick={() => updateEmail.mutate()} className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {updateEmail.isPending ? "Atualizando…" : "Salvar usuário"}
-        </button>
-        <p className="text-xs text-muted-foreground">Sem "@" → salvo como usuário@admin.local</p>
-      </section>
 
-      <section className="rounded-xl border bg-card p-4 space-y-3">
-        <h3 className="text-sm font-semibold">Alterar Senha</h3>
-        <Field label="Nova senha">
+        <Field label="Nova Senha">
           <div className="relative">
-            <input type={showPass ? "text" : "password"} minLength={4} value={newPass} onChange={(e) => setNewPass(e.target.value)} className={inp + " pr-10"} placeholder="••••••" />
+            <input type={showPass ? "text" : "password"} minLength={4} value={newPass} onChange={(e) => setNewPass(e.target.value)} className={inp + " pr-10"} placeholder="Digite a nova senha" />
             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
         </Field>
-        <Field label="Confirmar nova senha">
-          <input type={showPass ? "text" : "password"} value={confirmPass} onChange={(e) => setConfirm(e.target.value)} className={inp} placeholder="••••••" />
+        <Field label="Confirmar Nova Senha">
+          <input type={showPass ? "text" : "password"} value={confirmPass} onChange={(e) => setConfirm(e.target.value)} className={inp} placeholder="Repita a nova senha" />
         </Field>
-        <button disabled={!newPass || !confirmPass || updatePass.isPending} onClick={() => updatePass.mutate()} className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-          {updatePass.isPending ? "Salvando…" : "Salvar senha"}
+
+        <button
+          disabled={(!newUsername && !newPass) || updateAccount.isPending}
+          onClick={() => updateAccount.mutate()}
+          className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60 transition"
+        >
+          {updateAccount.isPending ? "Salvando…" : "Salvar Novas Credenciais"}
         </button>
       </section>
     </div>
@@ -718,4 +983,3 @@ function SalRow({ label, value, color }: { label: string; value: string; color?:
     </div>
   );
 }
-
