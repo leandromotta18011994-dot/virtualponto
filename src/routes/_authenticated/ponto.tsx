@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEntries, useMe, addOfflineEntry } from "@/lib/data";
@@ -138,7 +139,19 @@ function Ponto() {
 
       {/* Registros de hoje */}
       <section>
-        <h2 className="mb-2 text-sm font-semibold">Registros de hoje</h2>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Registros de hoje</h2>
+          <button
+            title="Atualizar registros"
+            onClick={() => {
+              qc.invalidateQueries({ queryKey: ["entries"] });
+              toast.success("Registros atualizados!");
+            }}
+            className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground transition"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </button>
+        </div>
         {today.length === 0 ? (
           <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum registro ainda.</p>
         ) : (
