@@ -65,13 +65,6 @@ function Auth() {
         </button>
       </form>
 
-      <div className="mt-6 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
-        <p className="font-semibold text-foreground">Acesso padrão do administrador:</p>
-        <p>Usuário: <span className="font-mono font-medium text-foreground">admin</span></p>
-        <p>Senha: <span className="font-mono font-medium text-foreground">admin</span></p>
-        <p className="mt-1 text-[11px]">Altere as credenciais em <strong>Admin → Config.</strong> após o primeiro acesso.</p>
-      </div>
-
       <p className="mt-6 text-center text-xs text-muted-foreground">
         Não possui acesso? Solicite ao administrador.
       </p>
