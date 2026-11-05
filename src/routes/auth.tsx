@@ -155,13 +155,13 @@ function Auth() {
       <h1 className="mt-2 text-3xl font-bold">Bem-vindo</h1>
       <p className="mt-1 text-sm text-muted-foreground">Acesse com seu usuário e senha.</p>
 
-      <form onSubmit={submit} className="mt-8 space-y-3">
+      <form onSubmit={submit} className="mt-8 space-y-4">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Usuário ou E-mail</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Usuário</label>
           <input
             required
             autoComplete="username"
-            placeholder="admin"
+            placeholder="Usuário"
             value={loginInput}
             onChange={(e) => setLoginInput(e.target.value)}
             className={inp}
@@ -173,7 +173,7 @@ function Auth() {
             required
             type="password"
             autoComplete="current-password"
-            placeholder="admin"
+            placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={inp}
@@ -186,17 +186,6 @@ function Auth() {
           {loading ? "Entrando…" : "Entrar"}
         </button>
       </form>
-
-      <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-3.5 text-xs text-muted-foreground space-y-1.5">
-        <p className="font-semibold text-foreground flex items-center gap-1.5">
-          <span>🔑</span> Acesso Principal do Administrador:
-        </p>
-        <p>Usuário: <span className="font-mono font-bold text-foreground">admin</span></p>
-        <p>Senha: <span className="font-mono font-bold text-foreground">admin</span></p>
-        <p className="mt-1 text-[11px] text-muted-foreground">
-          Após entrar como admin, configure os horários de expediente, cadastre os funcionários e altere sua senha na aba <strong>Configurações</strong>.
-        </p>
-      </div>
     </main>
   );
 }
