@@ -44,7 +44,7 @@ export function BancoView({
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-ink p-5 text-ink-foreground">
-        <p className="font-mono text-xs uppercase tracking-widest opacity-60">Saldo · últimos {sinceDays} dias</p>
+        <p className="font-mono text-xs uppercase tracking-widest opacity-60">Saldo - ultimos {sinceDays} dias</p>
         <p className={`mt-1 font-mono text-5xl font-bold tabular ${total >= 0 ? "text-success" : "text-destructive"}`}>{fmtMin(total, true)}</p>
       </div>
       <div className="grid grid-cols-3 gap-3">
@@ -53,9 +53,9 @@ export function BancoView({
         <Stat label="Dias"         value={String(days.length)} />
       </div>
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">Carregando...</p>
       ) : days.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">Sem registros no período.</p>
+        <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">Sem registros no periodo.</p>
       ) : (
         <ul className="space-y-3">
           {days.map((d) => (
@@ -65,13 +65,13 @@ export function BancoView({
                 <span className={`font-mono text-sm font-semibold ${d.balance >= 0 ? "text-success" : "text-destructive"}`}>{fmtMin(d.balance, true)}</span>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Trabalhado {fmtMin(d.worked)} · Almoço {fmtMin(d.lunch)}{d.open ? " · em aberto" : ""}
+                Trabalhado {fmtMin(d.worked)} - Almoco {fmtMin(d.lunch)}{d.open ? " - em aberto" : ""}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {d.entries.map((e) => (
                   <span key={e.id} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
                     {KIND_LABEL[e.kind]} <b className="font-mono">{fmtTime(e.recorded_at)}</b>
-                    {e.edited_at && <span className="text-yellow-500 ml-0.5" title="Editado">✎</span>}
+                    {e.edited_at && <span className="text-yellow-500 ml-0.5" title="Editado">(editado)</span>}
                     {canEdit && (
                       <button
                         aria-label="Remover registro"

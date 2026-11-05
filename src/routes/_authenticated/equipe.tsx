@@ -10,7 +10,7 @@ import { dayKey, fmtMin, groupByDay } from "@/lib/time";
 import type { Entry } from "@/lib/time";
 
 export const Route = createFileRoute("/_authenticated/equipe")({
-  head: () => ({ meta: [{ title: "Equipe – Banco de Horas" }] }),
+  head: () => ({ meta: [{ title: "Equipe - Banco de Horas" }] }),
   component: Equipe,
 });
 
@@ -49,8 +49,8 @@ function Equipe() {
   return (
     <main className="space-y-3 px-5 pt-4">
       <h1 className="text-xl font-semibold">Equipe</h1>
-      <p className="text-sm text-muted-foreground">Novos funcionários aparecem aqui após criarem a conta.</p>
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+      <p className="text-sm text-muted-foreground">Novos funcionarios aparecem aqui apos criarem a conta.</p>
+      {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
       <ul className="space-y-2">
         {data?.profiles.map((p) => {
           const days = groupByDay(data.entries.filter((e) => e.user_id === p.id), p.daily_minutes);
@@ -62,7 +62,7 @@ function Equipe() {
                 <div>
                   <p className="font-medium">{p.full_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Jornada {fmtMin(p.daily_minutes)} · {t ? (t.open ? "trabalhando agora" : `hoje ${fmtMin(t.worked)}`) : "sem registro hoje"}
+                    Jornada {fmtMin(p.daily_minutes)} - {t ? (t.open ? "trabalhando agora" : `hoje ${fmtMin(t.worked)}`) : "sem registro hoje"}
                   </p>
                 </div>
                 <span className={`font-mono font-semibold ${bal >= 0 ? "text-success" : "text-destructive"}`}>{fmtMin(bal, true)}</span>
@@ -94,7 +94,7 @@ function JornadaForm({ profile, onSaved }: { profile: Profile; onSaved: (p: Prof
       <label className="flex-1 text-xs text-muted-foreground">Jornada (h/dia)
         <input type="number" step="0.25" min="1" max="14" value={h} onChange={(e) => setH(Number(e.target.value))} className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono text-foreground" />
       </label>
-      <label className="flex-1 text-xs text-muted-foreground">Almoço (min)
+      <label className="flex-1 text-xs text-muted-foreground">Almoco (min)
         <input type="number" min="0" max="240" value={l} onChange={(e) => setL(Number(e.target.value))} className="mt-1 w-full rounded-md border bg-background px-3 py-2 font-mono text-foreground" />
       </label>
       <button disabled={save.isPending} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Salvar</button>

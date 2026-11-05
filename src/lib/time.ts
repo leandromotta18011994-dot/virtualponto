@@ -10,9 +10,9 @@ export type Entry = {
 
 export const KIND_LABEL: Record<EntryKind, string> = {
   entrada: "Entrada",
-  saida_almoco: "Saída almoço",
-  volta_almoco: "Volta almoço",
-  saida: "Saída",
+  saida_almoco: "Saida almoco",
+  volta_almoco: "Volta almoco",
+  saida: "Saida",
 };
 
 const IN: EntryKind[] = ["entrada", "volta_almoco"];
@@ -45,7 +45,7 @@ export function monthLabel(year: number, month: number) {
   return new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 }
 
-/** Dias úteis (seg–sex) em um dado mês */
+/** Dias uteis (seg-sex) em um dado mes */
 export function getBusinessDays(year: number, month: number): number {
   const totalDays = new Date(year, month + 1, 0).getDate();
   let count = 0;

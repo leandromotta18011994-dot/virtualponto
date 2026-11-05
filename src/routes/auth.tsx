@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Entrar – Virtual Ponto" },
+      { title: "Entrar - Virtual Ponto" },
       { name: "description", content: "Acesse para registrar seu ponto ou gerenciar a equipe." },
     ],
   }),
@@ -48,7 +48,6 @@ function Auth() {
   const [loading, setLoading]       = useState(false);
 
   useEffect(() => {
-    // Se já estiver autenticado (ou sessão local admin ativa)
     const localAdmin = localStorage.getItem("vp_is_admin_session");
     if (localAdmin === "true") {
       navigate({ to: "/admin" });
@@ -72,14 +71,12 @@ function Auth() {
     const cleanInput = loginInput.trim();
     const adminCreds = getStoredAdminCredentials();
 
-    // 1. CHECAGEM PRIORITÁRIA DE ADMIN (Permite entrada garantida como admin/admin inicial ou credenciais alteradas)
     const isAdminMatch =
       cleanInput.toLowerCase() === adminCreds.username.toLowerCase() ||
       cleanInput.toLowerCase() === adminCreds.email.toLowerCase() ||
       (cleanInput.toLowerCase() === "admin" && adminCreds.username === "admin");
 
     if (isAdminMatch && password === adminCreds.password) {
-      // Login Admin Garantido!
       localStorage.setItem("vp_is_admin_session", "true");
       localStorage.setItem(
         "vp_current_user",
@@ -93,21 +90,17 @@ function Auth() {
         })
       );
 
-      // Tenta também autenticar no Supabase Auth em background se existir
       try {
         const loginEmail = adminCreds.email.includes("@") ? adminCreds.email : `${adminCreds.email}@admin.local`;
         await supabase.auth.signInWithPassword({ email: loginEmail, password });
-      } catch {
-        // Ignora caso ainda não tenha sido criado no Supabase Cloud
-      }
+      } catch {}
 
-      toast.success("Acesso Administrador liberado com sucesso!");
+      toast.success("Acesso Administrador liberado!");
       navigate({ to: "/admin" });
       setLoading(false);
       return;
     }
 
-    // 2. CHECAGEM DE FUNCIONÁRIOS / DEMAIS USUÁRIOS VIA SUPABASE
     const loginEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@admin.local`;
     const { data, error } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -115,7 +108,6 @@ function Auth() {
     });
 
     if (error || !data.user) {
-      // Tenta verificar se é um funcionário criado localmente na lista de backup
       const localUsersRaw = localStorage.getItem("vp_team_profiles");
       if (localUsersRaw) {
         try {
@@ -137,7 +129,7 @@ function Auth() {
         } catch {}
       }
 
-      toast.error("Usuário ou senha inválidos.");
+      toast.error("Usuario ou senha invalidos.");
     } else {
       localStorage.removeItem("vp_is_admin_session");
       toast.success("Login realizado!");
@@ -151,17 +143,17 @@ function Auth() {
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
-      <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">⏱ Virtual Ponto</p>
+      <p className="font-mono text-xs uppercase tracking-[0.3em] text-primary">Virtual Ponto</p>
       <h1 className="mt-2 text-3xl font-bold">Bem-vindo</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Acesse com seu usuário e senha.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Acesse com seu usuario e senha.</p>
 
       <form onSubmit={submit} className="mt-8 space-y-4">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Usuário</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Usuario</label>
           <input
             required
             autoComplete="username"
-            placeholder="Usuário"
+            placeholder="Usuario"
             value={loginInput}
             onChange={(e) => setLoginInput(e.target.value)}
             className={inp}
@@ -183,7 +175,7 @@ function Auth() {
           disabled={loading}
           className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60 transition"
         >
-          {loading ? "Entrando…" : "Entrar"}
+          {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
     </main>

@@ -27,13 +27,81 @@ export type WorkSchedule = {
   created_at: string;
 };
 
+// ─── Sincronização Automática Offline ─────────────────────────────────────────
+
+const OFFLINE_QUEUE_KEY = "vp_offline_queue";
+
+export function getOfflineQueue(): Entry[] {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem(OFFLINE_QUEUE_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function addOfflineEntry(entry: Entry) {
+  if (typeof window === "undefined") return;
+  const queue = getOfflineQueue();
+  queue.push(entry);
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+
+  // Também adiciona na lista local para exibição imediata
+  const key = `vp_entries_${entry.user_id}`;
+  const userEntries = localStorage.getItem(key);
+  const list: Entry[] = userEntries ? JSON.parse(userEntries) : [];
+  list.unshift(entry);
+  localStorage.setItem(key, JSON.stringify(list));
+
+  const allKey = "vp_all_time_entries";
+  const allEntriesRaw = localStorage.getItem(allKey);
+  const allList: Entry[] = allEntriesRaw ? JSON.parse(allEntriesRaw) : [];
+  allList.unshift(entry);
+  localStorage.setItem(allKey, JSON.stringify(allList));
+}
+
+export async function syncOfflineQueue() {
+  if (typeof window === "undefined" || !navigator.onLine) return;
+  const queue = getOfflineQueue();
+  if (queue.length === 0) return;
+
+  const remaining: Entry[] = [];
+
+  for (const item of queue) {
+    try {
+      const { error } = await supabase.from("time_entries").insert({
+        user_id: item.user_id,
+        kind: item.kind,
+        recorded_at: item.recorded_at,
+        note: item.note || "[Sincronizado apos conexao]",
+      });
+      if (error) {
+        remaining.push(item);
+      }
+    } catch {
+      remaining.push(item);
+    }
+  }
+
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+  if (queue.length > remaining.length) {
+    console.log(`[Offline Sync] ${queue.length - remaining.length} registros sincronizados com sucesso.`);
+  }
+}
+
+// Ouvinte de restabelecimento de conexao
+if (typeof window !== "undefined") {
+  window.addEventListener("online", () => {
+    syncOfflineQueue();
+  });
+}
+
 // ─── Hooks ───────────────────────────────────────────────────────────────────
 
 export function useMe() {
   return useQuery({
     queryKey: ["me"],
     queryFn: async () => {
-      // 1. Verifica se há sessão local de Administrador root
+      // Tenta sincronizar registros pendentes
+      syncOfflineQueue();
+
       if (typeof window !== "undefined") {
         const isLocalAdmin = localStorage.getItem("vp_is_admin_session") === "true";
         if (isLocalAdmin) {
@@ -58,7 +126,6 @@ export function useMe() {
           };
         }
 
-        // Verifica se há funcionário logado localmente
         const currentLocalUser = localStorage.getItem("vp_current_user");
         if (currentLocalUser) {
           try {
@@ -74,13 +141,12 @@ export function useMe() {
         }
       }
 
-      // 2. Tenta autenticação oficial do Supabase
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
-        throw new Error("Sem sessão ativa");
+        throw new Error("Sem sessao ativa");
       }
 
       const [{ data: profile }, { data: roles }] = await Promise.all([
@@ -96,7 +162,7 @@ export function useMe() {
         user,
         profile: (profile ?? {
           id: user.id,
-          full_name: user.user_metadata?.full_name || "Usuário",
+          full_name: user.user_metadata?.full_name || "Usuario",
           email: user.email || null,
           daily_minutes: 480,
           lunch_minutes: 60,
@@ -119,7 +185,6 @@ export function useEntries(userId: string | undefined, sinceDays = 31) {
       since.setDate(since.getDate() - sinceDays);
       since.setHours(0, 0, 0, 0);
 
-      // Tenta carregar do Supabase
       try {
         const { data, error } = await supabase
           .from("time_entries")
@@ -133,7 +198,6 @@ export function useEntries(userId: string | undefined, sinceDays = 31) {
         }
       } catch {}
 
-      // Fallback local se estiver offline ou em teste local
       if (typeof window !== "undefined") {
         const local = localStorage.getItem(`vp_entries_${userId}`);
         if (local) {
@@ -162,7 +226,6 @@ export function useAllProfiles() {
         }
       } catch {}
 
-      // Fallback em localStorage
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem("vp_team_profiles");
         if (stored) {
@@ -191,7 +254,6 @@ export function useWorkSchedules() {
         }
       } catch {}
 
-      // Fallback em localStorage
       if (typeof window !== "undefined") {
         const stored = localStorage.getItem("vp_work_schedules");
         if (stored) {
@@ -201,11 +263,10 @@ export function useWorkSchedules() {
         }
       }
 
-      // Padrão inicial com acentuação correta
       return [
         {
           id: "default-schedule",
-          name: "Padrão (08:00 às 17:00)",
+          name: "Padrao (08:00 as 17:00)",
           entry_time: "08:00",
           lunch_start: "12:00",
           lunch_end: "13:00",
@@ -237,7 +298,6 @@ export function useTeamEntries(sinceDays = 60) {
         if (!error && data) return data as Entry[];
       } catch {}
 
-      // Fallback local se necessário
       if (typeof window !== "undefined") {
         const teamRaw = localStorage.getItem("vp_all_time_entries");
         if (teamRaw) {
