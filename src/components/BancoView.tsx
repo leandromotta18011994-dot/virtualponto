@@ -14,15 +14,23 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "po
   );
 }
 
-export function BancoView({ profile, canEdit }: { profile: Profile; canEdit?: boolean }) {
-  const { data: entries = [], isLoading } = useEntries(profile.id, 31);
+export function BancoView({
+  profile,
+  canEdit,
+  sinceDays = 31,
+}: {
+  profile: Profile;
+  canEdit?: boolean;
+  sinceDays?: number;
+}) {
+  const { data: entries = [], isLoading } = useEntries(profile.id, sinceDays);
   const qc = useQueryClient();
-  const days = groupByDay(entries, profile.daily_minutes);
+  const days     = groupByDay(entries, profile.daily_minutes);
   const todayKey = dayKey(new Date());
-  const closed = days.filter((d) => d.key !== todayKey || !d.open);
-  const total = closed.reduce((a, d) => a + d.balance, 0);
-  const extra = closed.reduce((a, d) => a + Math.max(0, d.balance), 0);
-  const worked = days.reduce((a, d) => a + d.worked, 0);
+  const closed   = days.filter((d) => d.key !== todayKey || !d.open);
+  const total    = closed.reduce((a, d) => a + d.balance, 0);
+  const extra    = closed.reduce((a, d) => a + Math.max(0, d.balance), 0);
+  const worked   = days.reduce((a, d) => a + d.worked, 0);
 
   const del = useMutation({
     mutationFn: async (id: string) => {
@@ -36,13 +44,13 @@ export function BancoView({ profile, canEdit }: { profile: Profile; canEdit?: bo
   return (
     <div className="space-y-5">
       <div className="rounded-2xl bg-ink p-5 text-ink-foreground">
-        <p className="font-mono text-xs uppercase tracking-widest opacity-60">Saldo · últimos 31 dias</p>
+        <p className="font-mono text-xs uppercase tracking-widest opacity-60">Saldo · últimos {sinceDays} dias</p>
         <p className={`mt-1 font-mono text-5xl font-bold tabular ${total >= 0 ? "text-success" : "text-destructive"}`}>{fmtMin(total, true)}</p>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <Stat label="Trabalhado" value={fmtMin(worked)} />
+        <Stat label="Trabalhado"   value={fmtMin(worked)} />
         <Stat label="Horas extras" value={fmtMin(extra)} tone="pos" />
-        <Stat label="Dias" value={String(days.length)} />
+        <Stat label="Dias"         value={String(days.length)} />
       </div>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando…</p>
@@ -63,8 +71,13 @@ export function BancoView({ profile, canEdit }: { profile: Profile; canEdit?: bo
                 {d.entries.map((e) => (
                   <span key={e.id} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs">
                     {KIND_LABEL[e.kind]} <b className="font-mono">{fmtTime(e.recorded_at)}</b>
+                    {e.edited_at && <span className="text-yellow-500 ml-0.5">✎</span>}
                     {canEdit && (
-                      <button aria-label="Remover registro" onClick={() => confirm("Remover este registro?") && del.mutate(e.id)} className="ml-1 text-destructive">
+                      <button
+                        aria-label="Remover registro"
+                        onClick={() => { if (confirm("Remover este registro?")) del.mutate(e.id); }}
+                        className="ml-1 text-destructive"
+                      >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     )}

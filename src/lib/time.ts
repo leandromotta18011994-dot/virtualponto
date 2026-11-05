@@ -1,5 +1,12 @@
 export type EntryKind = "entrada" | "saida_almoco" | "volta_almoco" | "saida";
-export type Entry = { id: string; user_id: string; kind: EntryKind; recorded_at: string };
+export type Entry = {
+  id: string;
+  user_id: string;
+  kind: EntryKind;
+  recorded_at: string;
+  edited_at?: string | null;
+  note?: string | null;
+};
 
 export const KIND_LABEL: Record<EntryKind, string> = {
   entrada: "Entrada",
@@ -23,6 +30,59 @@ export function fmtMin(min: number, signed = false) {
 
 export function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+}
+
+export function fmtDay(key: string) {
+  const [y = 0, m = 1, d = 1] = key.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
+}
+
+export function fmtBRL(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+export function monthLabel(year: number, month: number) {
+  return new Date(year, month, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+/** Dias úteis (seg–sex) em um dado mês */
+export function getBusinessDays(year: number, month: number): number {
+  const totalDays = new Date(year, month + 1, 0).getDate();
+  let count = 0;
+  for (let d = 1; d <= totalDays; d++) {
+    const dow = new Date(year, month, d).getDay();
+    if (dow !== 0 && dow !== 6) count++;
+  }
+  return count;
+}
+
+export type SalaryCalc = {
+  hourlyRate: number;
+  extraMinutes: number;
+  debtMinutes: number;
+  extraValue: number;
+  debtValue: number;
+  finalSalary: number;
+  balanceMinutes: number;
+};
+
+export function calcSalary(params: {
+  monthlySalary: number;
+  dailyMinutes: number;
+  workedMinutes: number;
+  expectedMinutes: number;
+}): SalaryCalc {
+  const { monthlySalary, dailyMinutes, workedMinutes, expectedMinutes } = params;
+  const dailyHours = dailyMinutes / 60;
+  const workDays = expectedMinutes / dailyMinutes;
+  const hourlyRate = workDays > 0 && dailyHours > 0 ? monthlySalary / (workDays * dailyHours) : 0;
+  const balanceMinutes = workedMinutes - expectedMinutes;
+  const extraMinutes = Math.max(0, balanceMinutes);
+  const debtMinutes = Math.max(0, -balanceMinutes);
+  const extraValue = (extraMinutes / 60) * hourlyRate * 1.5;
+  const debtValue = (debtMinutes / 60) * hourlyRate;
+  const finalSalary = monthlySalary + extraValue - debtValue;
+  return { hourlyRate, extraMinutes, debtMinutes, extraValue, debtValue, finalSalary, balanceMinutes };
 }
 
 export type DaySummary = {
@@ -75,9 +135,4 @@ export function nextKinds(today: Entry[]): EntryKind[] {
     case "volta_almoco": return ["saida"];
     default: return ["entrada"];
   }
-}
-
-export function fmtDay(key: string) {
-  const [y = 0, m = 1, d = 1] = key.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "short" });
 }

@@ -21,7 +21,10 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          is_active: boolean
           lunch_minutes: number
+          monthly_salary: number
+          work_schedule_id: string | null
         }
         Insert: {
           created_at?: string
@@ -29,7 +32,10 @@ export type Database = {
           email?: string | null
           full_name?: string
           id: string
+          is_active?: boolean
           lunch_minutes?: number
+          monthly_salary?: number
+          work_schedule_id?: string | null
         }
         Update: {
           created_at?: string
@@ -37,31 +43,79 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          is_active?: boolean
           lunch_minutes?: number
+          monthly_salary?: number
+          work_schedule_id?: string | null
         }
         Relationships: []
       }
       time_entries: {
         Row: {
           created_at: string
+          edited_at: string | null
+          edited_by: string | null
           id: string
           kind: string
+          note: string | null
           recorded_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           kind: string
+          note?: string | null
           recorded_at?: string
           user_id?: string
         }
         Update: {
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           kind?: string
+          note?: string | null
           recorded_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      work_schedules: {
+        Row: {
+          created_at: string
+          daily_minutes: number
+          entry_time: string
+          exit_time: string
+          id: string
+          lunch_end: string
+          lunch_minutes: number
+          lunch_start: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          daily_minutes?: number
+          entry_time?: string
+          exit_time?: string
+          id?: string
+          lunch_end?: string
+          lunch_minutes?: number
+          lunch_start?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          daily_minutes?: number
+          entry_time?: string
+          exit_time?: string
+          id?: string
+          lunch_end?: string
+          lunch_minutes?: number
+          lunch_start?: string
+          name?: string
         }
         Relationships: []
       }

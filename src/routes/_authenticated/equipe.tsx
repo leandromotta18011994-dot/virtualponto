@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BancoView } from "@/components/BancoView";
 import { useMe, type Profile } from "@/lib/data";
-import { dayKey, fmtMin, groupByDay, type Entry } from "@/lib/time";
+import { dayKey, fmtMin, groupByDay } from "@/lib/time";
+import type { Entry } from "@/lib/time";
 
 export const Route = createFileRoute("/_authenticated/equipe")({
-  head: () => ({ meta: [{ title: "Equipe — Banco de Horas" }, { name: "description", content: "Gestão de jornada e horas da equipe." }] }),
+  head: () => ({ meta: [{ title: "Equipe – Banco de Horas" }] }),
   component: Equipe,
 });
 
@@ -23,7 +24,7 @@ function Equipe() {
       const since = new Date(); since.setDate(since.getDate() - 31); since.setHours(0, 0, 0, 0);
       const [{ data: profiles }, { data: entries }] = await Promise.all([
         supabase.from("profiles").select("*").order("full_name"),
-        supabase.from("time_entries").select("id,user_id,kind,recorded_at").gte("recorded_at", since.toISOString()),
+        supabase.from("time_entries").select("id,user_id,kind,recorded_at,edited_at,note").gte("recorded_at", since.toISOString()),
       ]);
       return { profiles: (profiles ?? []) as Profile[], entries: (entries ?? []) as Entry[] };
     },

@@ -9,17 +9,9 @@ import { dayKey, fmtMin, fmtTime, KIND_LABEL, nextKinds, summarizeDay, type Entr
 export const Route = createFileRoute("/_authenticated/ponto")({
   head: () => ({
     meta: [
-      { title: "Registrar ponto — Banco de Horas" },
+      { title: "Registrar ponto – Banco de Horas" },
       { name: "description", content: "Registre entrada, almoço e saída e acompanhe suas horas trabalhadas e extras em tempo real." },
-      { property: "og:title", content: "Registrar ponto — Banco de Horas" },
-      { property: "og:description", content: "Bata o ponto, controle o almoço e acompanhe seu banco de horas." },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://virtualponto.lovable.app/ponto" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Registrar ponto — Banco de Horas" },
-      { name: "twitter:description", content: "Bata o ponto, controle o almoço e acompanhe seu banco de horas." },
     ],
-    links: [{ rel: "canonical", href: "https://virtualponto.lovable.app/ponto" }],
   }),
   component: Ponto,
 });
@@ -31,9 +23,9 @@ function Ponto() {
   const [now, setNow] = useState(new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 1000); return () => clearInterval(t); }, []);
 
-  const today = entries.filter((e) => dayKey(e.recorded_at) === dayKey(now));
-  const daily = me?.profile?.daily_minutes ?? 480;
-  const s = summarizeDay(today, daily, now);
+  const today   = entries.filter((e) => dayKey(e.recorded_at) === dayKey(now));
+  const daily   = me?.profile?.daily_minutes ?? 480;
+  const s       = summarizeDay(today, daily, now);
   const options = nextKinds(today);
   const primary = options[0]!;
 
@@ -48,10 +40,15 @@ function Ponto() {
   });
 
   const progress = Math.min(100, (s.worked / daily) * 100);
-  const status = today.length === 0 ? "Fora do expediente" : s.open ? "Trabalhando" : options[0] === "volta_almoco" ? "Em almoço" : options[0] === "entrada" ? "Expediente encerrado" : "";
+  const status   =
+    today.length === 0       ? "Fora do expediente" :
+    s.open                   ? "Trabalhando" :
+    options[0] === "volta_almoco" ? "Em almoço" :
+    options[0] === "entrada"      ? "Expediente encerrado" : "";
 
   return (
     <main className="space-y-6 px-5 pt-4">
+      {/* Relógio */}
       <section className="rounded-2xl bg-ink p-6 text-ink-foreground">
         <p className="font-mono text-xs uppercase tracking-widest opacity-60">
           {now.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
@@ -66,6 +63,7 @@ function Ponto() {
         </p>
       </section>
 
+      {/* Botão principal */}
       <section className="space-y-3">
         <button
           disabled={punch.isPending || !me}
@@ -85,21 +83,25 @@ function Ponto() {
         )}
       </section>
 
+      {/* Stats do dia */}
       <section className="grid grid-cols-3 gap-3">
         <Stat label="Trabalhado" value={fmtMin(s.worked)} />
-        <Stat label="Almoço" value={fmtMin(s.lunch)} />
-        <Stat label="Saldo dia" value={fmtMin(s.balance, true)} tone={s.balance >= 0 ? "pos" : "neg"} />
+        <Stat label="Almoço"     value={fmtMin(s.lunch)} />
+        <Stat label="Saldo dia"  value={fmtMin(s.balance, true)} tone={s.balance >= 0 ? "pos" : "neg"} />
       </section>
 
+      {/* Barra de progresso */}
       <div>
         <div className="mb-1 flex justify-between text-xs text-muted-foreground">
-          <span>Jornada</span><span className="font-mono">{fmtMin(daily)}</span>
+          <span>Jornada</span>
+          <span className="font-mono">{fmtMin(daily)}</span>
         </div>
         <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
         </div>
       </div>
 
+      {/* Registros de hoje */}
       <section>
         <h2 className="mb-2 text-sm font-semibold">Registros de hoje</h2>
         {today.length === 0 ? (
@@ -108,13 +110,25 @@ function Ponto() {
           <ol className="divide-y rounded-xl border bg-card">
             {s.entries.map((e) => (
               <li key={e.id} className="flex justify-between px-4 py-3 text-sm">
-                <span>{KIND_LABEL[e.kind]}</span>
+                <span className="flex items-center gap-2">
+                  {KIND_LABEL[e.kind]}
+                  {e.edited_at && <span className="text-xs text-yellow-500">✎ editado</span>}
+                </span>
                 <span className="font-mono tabular">{fmtTime(e.recorded_at)}</span>
               </li>
             ))}
           </ol>
         )}
       </section>
+
+      {/* Saldo acumulado */}
+      {me?.profile && s.balance !== 0 && (
+        <div className={`rounded-xl p-4 text-center text-sm font-medium ${s.balance > 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+          {s.balance > 0
+            ? `🏆 +${fmtMin(s.balance)} de horas extras hoje!`
+            : `⚠️ ${fmtMin(s.balance, true)} de horas devedoras hoje.`}
+        </div>
+      )}
     </main>
   );
 }
