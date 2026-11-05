@@ -402,7 +402,7 @@ function HistoricoTab() {
       const base = new Date(editingEntry.recorded_at);
       const [h = 0, m = 0] = editTime.split(":").map(Number);
       base.setHours(h, m, 0, 0);
-      const { error } = await supabase.from("time_entries").update({ recorded_at: base.toISOString(), edited_at: new Date().toISOString(), edited_by: me?.user.id, note: editNote || null }).eq("id", editingEntry.id);
+      const { error } = await supabase.from("time_entries").update({ recorded_at: base.toISOString(), edited_at: new Date().toISOString(), edited_by: me?.user.id ?? null, note: editNote || null }).eq("id", editingEntry.id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Horário corrigido!"); qc.invalidateQueries({ queryKey: ["team_entries"] }); qc.invalidateQueries({ queryKey: ["entries"] }); setEdit(null); },

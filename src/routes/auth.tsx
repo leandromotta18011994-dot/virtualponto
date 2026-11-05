@@ -16,7 +16,7 @@ export const Route = createFileRoute("/auth")({
 const ADMIN_STORAGE_KEY = "vp_admin_credentials";
 
 export function getStoredAdminCredentials() {
-  if (typeof window === "undefined") return { username: "admin", email: "admin@admin.local", passwordHash: "admin" };
+  if (typeof window === "undefined") return { username: "admin", email: "admin@admin.local", password: "admin" };
   const stored = localStorage.getItem(ADMIN_STORAGE_KEY);
   if (!stored) {
     const defaultCreds = { username: "admin", email: "admin@admin.local", password: "admin" };

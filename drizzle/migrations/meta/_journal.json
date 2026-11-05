@@ -8,6 +8,13 @@
       "when": 1792021214529,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793850688744,
+      "tag": "0001_add_work_schedules_and_profile_fields",
+      "breakpoints": true
     }
   ]
 }
