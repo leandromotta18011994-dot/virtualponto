@@ -7,8 +7,19 @@ import { useMe } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
+    // Permite passagem se houver sessão local admin ou usuário autenticado
+    if (typeof window !== "undefined") {
+      const isLocalAdmin = localStorage.getItem("vp_is_admin_session") === "true";
+      const hasLocalUser = localStorage.getItem("vp_current_user");
+      if (isLocalAdmin || hasLocalUser) {
+        return;
+      }
+    }
+
     const { data } = await supabase.auth.getUser();
-    if (!data.user) throw redirect({ to: "/auth" });
+    if (!data.user) {
+      throw redirect({ to: "/auth" });
+    }
   },
   component: Layout,
 });
@@ -19,13 +30,19 @@ function Layout() {
   const navigate = useNavigate();
 
   const signOut = async () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("vp_is_admin_session");
+      localStorage.removeItem("vp_current_user");
+    }
     await qc.cancelQueries();
     qc.clear();
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch {}
     navigate({ to: "/auth", replace: true });
   };
 
-  const item   = "flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground";
+  const item   = "flex flex-1 flex-col items-center gap-1 py-2 text-xs text-muted-foreground transition hover:text-foreground";
   const active = { className: "!text-primary font-semibold" };
 
   return (
@@ -33,23 +50,37 @@ function Layout() {
       <header className="flex items-center justify-between px-5 pt-6 pb-2">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            {me?.isGestor ? "Administrador" : "Banco de Horas"}
+            {me?.isGestor ? "Painel do Administrador" : "Banco de Horas"}
           </p>
-          <p className="text-lg font-semibold">{me?.profile?.full_name || "…"}</p>
+          <p className="text-lg font-semibold">{me?.profile?.full_name || "Usuário"}</p>
         </div>
-        <button onClick={signOut} aria-label="Sair" className="rounded-full border p-2 text-muted-foreground hover:text-foreground">
+        <button
+          onClick={signOut}
+          aria-label="Sair"
+          title="Sair do aplicativo"
+          className="rounded-full border p-2 text-muted-foreground hover:text-foreground transition"
+        >
           <LogOut className="h-4 w-4" />
         </button>
       </header>
 
       <Outlet />
 
-      <nav className="fixed inset-x-0 bottom-0 border-t bg-card/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 border-t bg-card/95 backdrop-blur z-30">
         <div className="mx-auto flex max-w-xl">
-          <Link to="/ponto"  className={item} activeProps={active}><Clock className="h-5 w-5" />Ponto</Link>
-          <Link to="/banco"  className={item} activeProps={active}><CalendarDays className="h-5 w-5" />Banco</Link>
+          <Link to="/ponto" className={item} activeProps={active}>
+            <Clock className="h-5 w-5" />
+            <span>Ponto</span>
+          </Link>
+          <Link to="/banco" className={item} activeProps={active}>
+            <CalendarDays className="h-5 w-5" />
+            <span>Banco</span>
+          </Link>
           {me?.isGestor && (
-            <Link to="/admin" className={item} activeProps={active}><ShieldCheck className="h-5 w-5" />Admin</Link>
+            <Link to="/admin" className={item} activeProps={active}>
+              <ShieldCheck className="h-5 w-5" />
+              <span>Admin</span>
+            </Link>
           )}
         </div>
       </nav>
