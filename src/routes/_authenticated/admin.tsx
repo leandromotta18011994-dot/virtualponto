@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+﻿import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -18,7 +18,7 @@ import {
 import { updateStoredAdminCredentials } from "../auth";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin – Virtual Ponto" }] }),
+  head: () => ({ meta: [{ title: "Admin â€“ Virtual Ponto" }] }),
   component: AdminPanel,
 });
 
@@ -29,16 +29,16 @@ function AdminPanel() {
   const [tab, setTab] = useState<Tab>("painel");
 
   if (me && !me.isGestor) {
-    return <p className="px-5 pt-6 text-sm text-muted-foreground">⛔ Acesso restrito ao administrador.</p>;
+    return <p className="px-5 pt-6 text-sm text-muted-foreground">â›” Acesso restrito ao administrador.</p>;
   }
 
   const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "painel",    label: "Painel",   icon: LayoutDashboard },
-    { id: "usuarios",  label: "Usuários", icon: Users },
-    { id: "horarios",  label: "Config. Horário", icon: Clock },
-    { id: "historico", label: "Horários Técnicos", icon: History },
-    { id: "gestao",    label: "Gestão Horas",   icon: TrendingUp },
-    { id: "salario",   label: "Cálculo Salarial",  icon: DollarSign },
+    { id: "usuarios",  label: "UsuÃ¡rios", icon: Users },
+    { id: "horarios",  label: "Config. HorÃ¡rio", icon: Clock },
+    { id: "historico", label: "HorÃ¡rios TÃ©cnicos", icon: History },
+    { id: "gestao",    label: "GestÃ£o Horas",   icon: TrendingUp },
+    { id: "salario",   label: "CÃ¡lculo Salarial",  icon: DollarSign },
     { id: "config",    label: "Config. Conta",  icon: Settings },
   ];
 
@@ -78,7 +78,7 @@ function AdminPanel() {
   );
 }
 
-// ─── PAINEL ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ PAINEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function PainelTab() {
   const { data: profiles = [] } = useAllProfiles();
@@ -95,14 +95,14 @@ function PainelTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Funcionários"      value={String(profiles.length)}              sub="cadastrados" />
+        <StatCard label="FuncionÃ¡rios"      value={String(profiles.length)}              sub="cadastrados" />
         <StatCard label="Trabalhando agora"  value={String(workingNow.length)}           sub="online hoje"  color="success" />
         <StatCard label="Com registro hoje"  value={String(withRecord)}                  sub="registros" />
         <StatCard label="Sem registro"       value={String(profiles.length - withRecord)} sub="ausentes"    color="warn" />
       </div>
       <section className="rounded-xl border bg-card p-4 space-y-2">
         <h2 className="text-sm font-semibold">Equipe hoje</h2>
-        {profiles.length === 0 && <p className="text-xs text-muted-foreground">Nenhum funcionário cadastrado.</p>}
+        {profiles.length === 0 && <p className="text-xs text-muted-foreground">Nenhum funcionÃ¡rio cadastrado.</p>}
         <ul className="divide-y">
           {profiles.map((p) => {
             const pe = todayEntries.filter((e) => e.user_id === p.id);
@@ -118,7 +118,7 @@ function PainelTab() {
                   pe.length > 0 ? "bg-muted text-muted-foreground" :
                   "bg-destructive/10 text-destructive"
                 }`}>
-                  {online ? "Trabalhando" : lunch ? "Almoço" : pe.length > 0 ? "Encerrado" : "Sem registro"}
+                  {online ? "Trabalhando" : lunch ? "AlmoÃ§o" : pe.length > 0 ? "Encerrado" : "Sem registro"}
                 </span>
               </li>
             );
@@ -129,7 +129,7 @@ function PainelTab() {
   );
 }
 
-// ─── USUÁRIOS ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ USUÃRIOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function UsuariosTab() {
   const { data: profiles = [], isLoading } = useAllProfiles();
@@ -180,11 +180,11 @@ function UsuariosTab() {
       localStorage.setItem("vp_team_profiles", JSON.stringify(list));
     },
     onSuccess: () => {
-      toast.success("Usuário criado com sucesso!");
+      toast.success("UsuÃ¡rio criado com sucesso!");
       qc.invalidateQueries({ queryKey: ["profiles"] });
       setShowForm(false);
     },
-    onError: (e: Error) => toast.error(e.message || "Erro ao criar usuário"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao criar usuÃ¡rio"),
   });
 
   const updateProfile = useMutation({
@@ -208,6 +208,25 @@ function UsuariosTab() {
     onError: () => toast.error("Erro ao atualizar"),
   });
 
+  const deleteProfile = useMutation({
+    mutationFn: async (id: string) => {
+      try {
+        await supabase.from("profiles").delete().eq("id", id);
+      } catch {}
+
+      const stored = localStorage.getItem("vp_team_profiles");
+      if (stored) {
+        const list = JSON.parse(stored).filter((p: any) => p.id !== id);
+        localStorage.setItem("vp_team_profiles", JSON.stringify(list));
+      }
+    },
+    onSuccess: () => {
+      toast.success("Usuário excluído com sucesso!");
+      qc.invalidateQueries({ queryKey: ["profiles"] });
+    },
+    onError: () => toast.error("Erro ao excluir usuário"),
+  });
+
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       try {
@@ -229,20 +248,20 @@ function UsuariosTab() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowForm(false); setEditProfile(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-          <h2 className="font-semibold">{editProfile ? "Editar Usuário" : "Novo Usuário"}</h2>
+          <h2 className="font-semibold">{editProfile ? "Editar UsuÃ¡rio" : "Novo UsuÃ¡rio"}</h2>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); editProfile ? updateProfile.mutate() : createUser.mutate(); }} className="space-y-3">
           <Field label="Nome completo">
-            <input required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inp} placeholder="João Silva" />
+            <input required value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inp} placeholder="JoÃ£o Silva" />
           </Field>
           {!editProfile && (
             <>
-              <Field label="Usuário (login ou e-mail)">
+              <Field label="UsuÃ¡rio (login ou e-mail)">
                 <input required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inp} placeholder="joao  ou  joao@empresa.com" />
               </Field>
               <Field label="Senha">
                 <div className="relative">
-                  <input required minLength={4} type={showPass ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inp + " pr-10"} placeholder="••••••" />
+                  <input required minLength={4} type={showPass ? "text" : "password"} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inp + " pr-10"} placeholder="â€¢â€¢â€¢â€¢â€¢â€¢" />
                   <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -250,15 +269,15 @@ function UsuariosTab() {
               </Field>
               <Field label="Cargo">
                 <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} className={inp}>
-                  <option value="funcionario">Funcionário</option>
+                  <option value="funcionario">FuncionÃ¡rio</option>
                   <option value="gestor">Administrador</option>
                 </select>
               </Field>
             </>
           )}
-          <Field label="Configuração de horário">
+          <Field label="ConfiguraÃ§Ã£o de horÃ¡rio">
             <select value={form.work_schedule_id} onChange={(e) => { const ws = schedules.find((s) => s.id === e.target.value); setForm({ ...form, work_schedule_id: e.target.value, daily_minutes: ws?.daily_minutes ?? form.daily_minutes, lunch_minutes: ws?.lunch_minutes ?? form.lunch_minutes }); }} className={inp}>
-              <option value="">– Personalizado –</option>
+              <option value="">â€“ Personalizado â€“</option>
               {schedules.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </Field>
@@ -266,15 +285,15 @@ function UsuariosTab() {
             <Field label="Jornada (h/dia)">
               <input type="number" step="0.25" min="1" max="14" value={form.daily_minutes / 60} onChange={(e) => setForm({ ...form, daily_minutes: Math.round(Number(e.target.value) * 60), work_schedule_id: "" })} className={inp} />
             </Field>
-            <Field label="Almoço (min)">
+            <Field label="AlmoÃ§o (min)">
               <input type="number" min="0" max="240" value={form.lunch_minutes} onChange={(e) => setForm({ ...form, lunch_minutes: Number(e.target.value), work_schedule_id: "" })} className={inp} />
             </Field>
           </div>
-          <Field label="Salário mensal (R$)">
+          <Field label="SalÃ¡rio mensal (R$)">
             <input type="number" min="0" step="0.01" value={form.monthly_salary} onChange={(e) => setForm({ ...form, monthly_salary: Number(e.target.value) })} className={inp} />
           </Field>
           <button disabled={createUser.isPending || updateProfile.isPending} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
-            {createUser.isPending || updateProfile.isPending ? "Salvando…" : editProfile ? "Salvar alterações" : "Criar usuário"}
+            {createUser.isPending || updateProfile.isPending ? "Salvandoâ€¦" : editProfile ? "Salvar alteraÃ§Ãµes" : "Criar usuÃ¡rio"}
           </button>
         </form>
       </div>
@@ -284,14 +303,14 @@ function UsuariosTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Usuários Cadastrados</h2>
+        <h2 className="font-semibold">UsuÃ¡rios Cadastrados</h2>
         <button onClick={openCreate} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
           <Plus className="h-3.5 w-3.5" /> Novo
         </button>
       </div>
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
+      {isLoading && <p className="text-sm text-muted-foreground">Carregandoâ€¦</p>}
       {!isLoading && profiles.length === 0 && (
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum usuário cadastrado.</p>
+        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum usuÃ¡rio cadastrado.</p>
       )}
       <ul className="space-y-2">
         {profiles.map((p) => (
@@ -300,11 +319,14 @@ function UsuariosTab() {
               <div className="min-w-0">
                 <p className="font-medium truncate">{p.full_name}</p>
                 <p className="text-xs text-muted-foreground truncate">{p.email}</p>
-                <p className="text-xs text-muted-foreground">Jornada {fmtMin(p.daily_minutes)} · Salário {fmtBRL(p.monthly_salary)}</p>
+                <p className="text-xs text-muted-foreground">Jornada {fmtMin(p.daily_minutes)} Â· SalÃ¡rio {fmtBRL(p.monthly_salary)}</p>
               </div>
               <div className="flex shrink-0 gap-1">
                 <button onClick={() => openEdit(p)} className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })} className={`rounded-md border p-1.5 ${p.is_active ? "text-muted-foreground" : "text-success"}`}>
+                <button title="Excluir Usuário" onClick={() => { if (confirm(`Tem certeza que deseja excluir o cadastro de ${p.full_name}?`)) deleteProfile.mutate(p.id); }} className="rounded-md border p-1.5 text-destructive hover:bg-destructive/10 transition">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+                <button title={p.is_active ? "Desativar" : "Ativar"} onClick={() => toggleActive.mutate({ id: p.id, is_active: !p.is_active })} className={`rounded-md border p-1.5 ${p.is_active ? "text-muted-foreground" : "text-success"}`}>
                   {p.is_active ? <X className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
                 </button>
               </div>
@@ -316,7 +338,7 @@ function UsuariosTab() {
   );
 }
 
-// ─── HORÁRIOS (CONFIGURAÇÃO DE EXPEDIENTE) ───────────────────────────────────
+// â”€â”€â”€ HORÃRIOS (CONFIGURAÃ‡ÃƒO DE EXPEDIENTE) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function HorariosTab() {
   const { data: schedules = [], isLoading } = useWorkSchedules();
@@ -355,12 +377,12 @@ function HorariosTab() {
       localStorage.setItem("vp_work_schedules", JSON.stringify(list));
     },
     onSuccess: () => {
-      toast.success("Configuração salva com sucesso!");
+      toast.success("ConfiguraÃ§Ã£o salva com sucesso!");
       qc.invalidateQueries({ queryKey: ["work_schedules"] });
       setShowForm(false);
       setEditing(null);
     },
-    onError: () => toast.error("Erro ao salvar configuração"),
+    onError: () => toast.error("Erro ao salvar configuraÃ§Ã£o"),
   });
 
   const del = useMutation({
@@ -374,7 +396,7 @@ function HorariosTab() {
         localStorage.setItem("vp_work_schedules", JSON.stringify(list));
       }
     },
-    onSuccess: () => { toast.success("Configuração removida!"); qc.invalidateQueries({ queryKey: ["work_schedules"] }); },
+    onSuccess: () => { toast.success("ConfiguraÃ§Ã£o removida!"); qc.invalidateQueries({ queryKey: ["work_schedules"] }); },
     onError: () => toast.error("Erro ao excluir"),
   });
 
@@ -384,24 +406,24 @@ function HorariosTab() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <button onClick={() => { setShowForm(false); setEditing(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
-          <h2 className="font-semibold">{editing ? "Editar Configuração de Horário" : "Nova Configuração de Horário"}</h2>
+          <h2 className="font-semibold">{editing ? "Editar ConfiguraÃ§Ã£o de HorÃ¡rio" : "Nova ConfiguraÃ§Ã£o de HorÃ¡rio"}</h2>
         </div>
         <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="space-y-3">
           <Field label="Nome da Escala (ex: Comercial, Turno Integral)">
-            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} placeholder="Padrão" />
+            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inp} placeholder="PadrÃ£o" />
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Entrada">     <input type="time" required value={form.entry_time}  onChange={(e) => setForm({ ...form, entry_time: e.target.value })}  className={inp} /></Field>
-            <Field label="Saída">       <input type="time" required value={form.exit_time}   onChange={(e) => setForm({ ...form, exit_time: e.target.value })}   className={inp} /></Field>
-            <Field label="Saída almoço"><input type="time" required value={form.lunch_start} onChange={(e) => setForm({ ...form, lunch_start: e.target.value })} className={inp} /></Field>
-            <Field label="Volta almoço"><input type="time" required value={form.lunch_end}   onChange={(e) => setForm({ ...form, lunch_end: e.target.value })}   className={inp} /></Field>
+            <Field label="SaÃ­da">       <input type="time" required value={form.exit_time}   onChange={(e) => setForm({ ...form, exit_time: e.target.value })}   className={inp} /></Field>
+            <Field label="SaÃ­da almoÃ§o"><input type="time" required value={form.lunch_start} onChange={(e) => setForm({ ...form, lunch_start: e.target.value })} className={inp} /></Field>
+            <Field label="Volta almoÃ§o"><input type="time" required value={form.lunch_end}   onChange={(e) => setForm({ ...form, lunch_end: e.target.value })}   className={inp} /></Field>
           </div>
           <div className="rounded-lg bg-muted p-3 text-sm space-y-1">
-            <p>⏱ Jornada calculada: <strong>{fmtMin(daily)}</strong></p>
-            <p>🍽️ Almoço: <strong>{fmtMin(lunch)}</strong></p>
+            <p>â± Jornada calculada: <strong>{fmtMin(daily)}</strong></p>
+            <p>ðŸ½ï¸ AlmoÃ§o: <strong>{fmtMin(lunch)}</strong></p>
           </div>
           <button disabled={save.isPending} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60">
-            {save.isPending ? "Salvando…" : "Salvar Configuração"}
+            {save.isPending ? "Salvandoâ€¦" : "Salvar ConfiguraÃ§Ã£o"}
           </button>
         </form>
       </div>
@@ -411,24 +433,24 @@ function HorariosTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Configurações de Horário de Trabalho</h2>
+        <h2 className="font-semibold">ConfiguraÃ§Ãµes de HorÃ¡rio de Trabalho</h2>
         <button onClick={() => { setForm(blank); setEditing(null); setShowForm(true); }} className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground">
           <Plus className="h-3.5 w-3.5" /> Adicionar Escala
         </button>
       </div>
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-      {!isLoading && schedules.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma configuração cadastrada.</p>}
+      {isLoading && <p className="text-sm text-muted-foreground">Carregandoâ€¦</p>}
+      {!isLoading && schedules.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhuma configuraÃ§Ã£o cadastrada.</p>}
       <ul className="space-y-2">
         {schedules.map((s) => (
           <li key={s.id} className="rounded-xl border bg-card p-4">
             <div className="flex items-start justify-between">
               <div>
                 <p className="font-medium">{s.name}</p>
-                <p className="text-xs text-muted-foreground">{s.entry_time} → {s.exit_time} · Almoço {s.lunch_start}–{s.lunch_end} · {fmtMin(s.daily_minutes)}/dia</p>
+                <p className="text-xs text-muted-foreground">{s.entry_time} â†’ {s.exit_time} Â· AlmoÃ§o {s.lunch_start}â€“{s.lunch_end} Â· {fmtMin(s.daily_minutes)}/dia</p>
               </div>
               <div className="flex gap-1">
                 <button onClick={() => { setForm({ name: s.name, entry_time: s.entry_time, lunch_start: s.lunch_start, lunch_end: s.lunch_end, exit_time: s.exit_time }); setEditing(s); setShowForm(true); }} className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => { if (confirm("Remover esta escala de horário?")) del.mutate(s.id); }} className="rounded-md border p-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                <button onClick={() => { if (confirm("Remover esta escala de horÃ¡rio?")) del.mutate(s.id); }} className="rounded-md border p-1.5 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           </li>
@@ -438,7 +460,7 @@ function HorariosTab() {
   );
 }
 
-// ─── HISTÓRICO & GESTÃO DE HORÁRIOS DO TÉCNICO (ADICIONAR / EDITAR / EXCLUIR) ──
+// â”€â”€â”€ HISTÃ“RICO & GESTÃƒO DE HORÃRIOS DO TÃ‰CNICO (ADICIONAR / EDITAR / EXCLUIR) â”€â”€
 
 function HistoricoTab() {
   const { data: profiles = [] }           = useAllProfiles();
@@ -448,12 +470,12 @@ function HistoricoTab() {
   const [userId, setUserId]       = useState("all");
   const [period, setPeriod]       = useState<"today" | "week" | "month" | "all">("today");
 
-  // Edição
+  // EdiÃ§Ã£o
   const [editingEntry, setEdit]   = useState<Entry | null>(null);
   const [editTime, setEditTime]   = useState("");
   const [editNote, setEditNote]   = useState("");
 
-  // Adicionar novo horário manual
+  // Adicionar novo horÃ¡rio manual
   const [showAddForm, setShowAdd] = useState(false);
   const [addUserId, setAddUserId] = useState("");
   const [addKind, setAddKind]     = useState<EntryKind>("entrada");
@@ -474,10 +496,10 @@ function HistoricoTab() {
     return entries;
   })();
 
-  // 1. ADICIONAR HORÁRIO
+  // 1. ADICIONAR HORÃRIO
   const addEntry = useMutation({
     mutationFn: async () => {
-      if (!addUserId) throw new Error("Selecione o técnico.");
+      if (!addUserId) throw new Error("Selecione o tÃ©cnico.");
       const [h = 0, m = 0] = addTime.split(":").map(Number);
       const [y, mon, d] = addDate.split("-").map(Number);
       const recorded = new Date(y, mon - 1, d, h, m, 0).toISOString();
@@ -514,16 +536,16 @@ function HistoricoTab() {
       localStorage.setItem(`vp_entries_${addUserId}`, JSON.stringify(ulist));
     },
     onSuccess: () => {
-      toast.success("Horário adicionado com sucesso!");
+      toast.success("HorÃ¡rio adicionado com sucesso!");
       qc.invalidateQueries({ queryKey: ["team_entries"] });
       qc.invalidateQueries({ queryKey: ["entries"] });
       setShowAdd(false);
       setAddNote("");
     },
-    onError: (e: Error) => toast.error(e.message || "Erro ao adicionar horário"),
+    onError: (e: Error) => toast.error(e.message || "Erro ao adicionar horÃ¡rio"),
   });
 
-  // 2. EDITAR HORÁRIO
+  // 2. EDITAR HORÃRIO
   const editEntry = useMutation({
     mutationFn: async () => {
       if (!editingEntry) return;
@@ -557,15 +579,15 @@ function HistoricoTab() {
       updateList(`vp_entries_${editingEntry.user_id}`);
     },
     onSuccess: () => {
-      toast.success("Horário corrigido com sucesso!");
+      toast.success("HorÃ¡rio corrigido com sucesso!");
       qc.invalidateQueries({ queryKey: ["team_entries"] });
       qc.invalidateQueries({ queryKey: ["entries"] });
       setEdit(null);
     },
-    onError: () => toast.error("Erro ao corrigir horário"),
+    onError: () => toast.error("Erro ao corrigir horÃ¡rio"),
   });
 
-  // 3. EXCLUIR HORÁRIO
+  // 3. EXCLUIR HORÃRIO
   const delEntry = useMutation({
     mutationFn: async (entry: Entry) => {
       try {
@@ -595,7 +617,7 @@ function HistoricoTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Horários dos Técnicos</h2>
+        <h2 className="font-semibold">HorÃ¡rios dos TÃ©cnicos</h2>
         <button
           onClick={() => {
             setAddUserId(profiles[0]?.id ?? "");
@@ -609,26 +631,26 @@ function HistoricoTab() {
 
       <div className="flex flex-wrap gap-2">
         <select value={userId} onChange={(e) => setUserId(e.target.value)} className={inp + " flex-1 min-w-0 py-2"}>
-          <option value="all">Todos os técnicos</option>
+          <option value="all">Todos os tÃ©cnicos</option>
           {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
         </select>
         <div className="flex gap-1">
           {(["today", "week", "month", "all"] as const).map((p) => (
             <button key={p} onClick={() => setPeriod(p)} className={`rounded-md px-2.5 py-2 text-xs font-medium ${period === p ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-              {{ today: "Hoje", week: "Semana", month: "Mês", all: "Tudo" }[p]}
+              {{ today: "Hoje", week: "Semana", month: "MÃªs", all: "Tudo" }[p]}
             </button>
           ))}
         </div>
       </div>
 
-      {/* MODAL / FORM ADICIONAR HORÁRIO */}
+      {/* MODAL / FORM ADICIONAR HORÃRIO */}
       {showAddForm && (
         <div className="rounded-xl border border-primary/30 bg-card p-4 space-y-3 shadow-md">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-sm">➕ Adicionar Horário para Técnico</p>
+            <p className="font-semibold text-sm">âž• Adicionar HorÃ¡rio para TÃ©cnico</p>
             <button onClick={() => setShowAdd(false)} className="text-muted-foreground"><X className="h-4 w-4" /></button>
           </div>
-          <Field label="Técnico / Funcionário">
+          <Field label="TÃ©cnico / FuncionÃ¡rio">
             <select value={addUserId} onChange={(e) => setAddUserId(e.target.value)} className={inp}>
               {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
             </select>
@@ -637,9 +659,9 @@ function HistoricoTab() {
             <Field label="Tipo de Ponto">
               <select value={addKind} onChange={(e) => setAddKind(e.target.value as EntryKind)} className={inp}>
                 <option value="entrada">Entrada</option>
-                <option value="saida_almoco">Saída Almoço</option>
-                <option value="volta_almoco">Volta Almoço</option>
-                <option value="saida">Saída</option>
+                <option value="saida_almoco">SaÃ­da AlmoÃ§o</option>
+                <option value="volta_almoco">Volta AlmoÃ§o</option>
+                <option value="saida">SaÃ­da</option>
               </select>
             </Field>
             <Field label="Data">
@@ -647,43 +669,43 @@ function HistoricoTab() {
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Horário">
+            <Field label="HorÃ¡rio">
               <input type="time" value={addTime} onChange={(e) => setAddTime(e.target.value)} className={inp} />
             </Field>
-            <Field label="Motivo / Observação">
+            <Field label="Motivo / ObservaÃ§Ã£o">
               <input value={addNote} onChange={(e) => setAddNote(e.target.value)} className={inp} placeholder="Ex: Esqueceu de bater" />
             </Field>
           </div>
           <div className="flex gap-2 pt-1">
             <button onClick={() => setShowAdd(false)} className="flex-1 rounded-lg border py-2 text-sm">Cancelar</button>
             <button disabled={addEntry.isPending || !addUserId} onClick={() => addEntry.mutate()} className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-              {addEntry.isPending ? "Salvando…" : "Adicionar Ponto"}
+              {addEntry.isPending ? "Salvandoâ€¦" : "Adicionar Ponto"}
             </button>
           </div>
         </div>
       )}
 
-      {/* MODAL / FORM EDITAR HORÁRIO */}
+      {/* MODAL / FORM EDITAR HORÃRIO */}
       {editingEntry && (
         <div className="rounded-xl border border-primary/30 bg-card p-4 space-y-3 shadow-md">
-          <p className="font-semibold text-sm">✏️ Corrigir Horário – {KIND_LABEL[editingEntry.kind]}</p>
-          <Field label="Novo Horário">
+          <p className="font-semibold text-sm">âœï¸ Corrigir HorÃ¡rio â€“ {KIND_LABEL[editingEntry.kind]}</p>
+          <Field label="Novo HorÃ¡rio">
             <input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} className={inp} />
           </Field>
-          <Field label="Motivo da Correção (opcional)">
+          <Field label="Motivo da CorreÃ§Ã£o (opcional)">
             <input value={editNote} onChange={(e) => setEditNote(e.target.value)} className={inp} placeholder="Ex: Ajuste de ponto solicitado" />
           </Field>
           <div className="flex gap-2">
             <button onClick={() => setEdit(null)} className="flex-1 rounded-lg border py-2 text-sm">Cancelar</button>
             <button disabled={editEntry.isPending || !editTime} onClick={() => editEntry.mutate()} className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60">
-              {editEntry.isPending ? "Salvando…" : "Salvar Correção"}
+              {editEntry.isPending ? "Salvandoâ€¦" : "Salvar CorreÃ§Ã£o"}
             </button>
           </div>
         </div>
       )}
 
-      {isLoading && <p className="text-sm text-muted-foreground">Carregando…</p>}
-      {!isLoading && filtered.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum registro no período.</p>}
+      {isLoading && <p className="text-sm text-muted-foreground">Carregandoâ€¦</p>}
+      {!isLoading && filtered.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum registro no perÃ­odo.</p>}
       <ul className="space-y-2">
         {filtered.map((e) => (
           <li key={e.id} className="rounded-xl border bg-card px-4 py-3">
@@ -691,15 +713,15 @@ function HistoricoTab() {
               <div className="min-w-0">
                 <p className="text-sm font-medium">{pName(e.user_id)}</p>
                 <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">{KIND_LABEL[e.kind]}</span> · <span className="font-mono">{fmtTime(e.recorded_at)}</span>
-                  {" · "}{new Date(e.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
-                  {e.edited_at && <span className="ml-1 text-yellow-500 font-semibold" title="Horário editado pelo admin"> ✎ editado</span>}
+                  <span className="font-medium text-foreground">{KIND_LABEL[e.kind]}</span> Â· <span className="font-mono">{fmtTime(e.recorded_at)}</span>
+                  {" Â· "}{new Date(e.recorded_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {e.edited_at && <span className="ml-1 text-yellow-500 font-semibold" title="HorÃ¡rio editado pelo admin"> âœŽ editado</span>}
                 </p>
                 {e.note && <p className="text-xs italic text-muted-foreground mt-0.5">{e.note}</p>}
               </div>
               <div className="flex shrink-0 gap-1">
                 <button
-                  title="Editar Horário"
+                  title="Editar HorÃ¡rio"
                   onClick={() => { setEdit(e); setEditTime(fmtTime(e.recorded_at)); setEditNote(e.note ?? ""); }}
                   className="rounded-md border p-1.5 text-muted-foreground hover:text-foreground transition"
                 >
@@ -707,7 +729,7 @@ function HistoricoTab() {
                 </button>
                 <button
                   title="Excluir Registro"
-                  onClick={() => { if (confirm("Tem certeza que deseja excluir este horário?")) delEntry.mutate(e); }}
+                  onClick={() => { if (confirm("Tem certeza que deseja excluir este horÃ¡rio?")) delEntry.mutate(e); }}
                   className="rounded-md border p-1.5 text-destructive hover:bg-destructive/10 transition"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -721,7 +743,7 @@ function HistoricoTab() {
   );
 }
 
-// ─── GESTÃO DE HORAS EXTRAS OU DEVEDORAS ───────────────────────────────────────
+// â”€â”€â”€ GESTÃƒO DE HORAS EXTRAS OU DEVEDORAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function GestaoTab() {
   const { data: profiles = [] }  = useAllProfiles();
@@ -740,7 +762,7 @@ function GestaoTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Gestão de Horas Extras e Devedoras</h2>
+        <h2 className="font-semibold">GestÃ£o de Horas Extras e Devedoras</h2>
         <div className="flex gap-1">
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className={inp + " py-1.5 text-xs"}>
             {Array.from({ length: 12 }, (_, i) => (
@@ -752,7 +774,7 @@ function GestaoTab() {
           </select>
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">Dias úteis no mês: <strong>{bizDays}</strong></p>
+      <p className="text-xs text-muted-foreground">Dias Ãºteis no mÃªs: <strong>{bizDays}</strong></p>
       <ul className="space-y-2">
         {profiles.map((p) => {
           const pEntries = monthEntries.filter((e) => e.user_id === p.id);
@@ -785,13 +807,13 @@ function GestaoTab() {
             </li>
           );
         })}
-        {profiles.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum técnico cadastrado.</p>}
+        {profiles.length === 0 && <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Nenhum tÃ©cnico cadastrado.</p>}
       </ul>
     </div>
   );
 }
 
-// ─── CÁLCULO SALARIAL FINAL COM HORAS EXTRAS / DEVEDORAS ─────────────────────
+// â”€â”€â”€ CÃLCULO SALARIAL FINAL COM HORAS EXTRAS / DEVEDORAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SalarioTab() {
   const { data: profiles = [] }  = useAllProfiles();
@@ -821,16 +843,16 @@ function SalarioTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold">Cálculo Salarial do Técnico</h2>
+      <h2 className="font-semibold">CÃ¡lculo Salarial do TÃ©cnico</h2>
       <div className="space-y-3 rounded-xl border bg-card p-4">
-        <Field label="Selecionar Técnico">
+        <Field label="Selecionar TÃ©cnico">
           <select value={userId} onChange={(e) => { setUserId(e.target.value); setResult(null); const p = profiles.find((x) => x.id === e.target.value); if (p?.monthly_salary) setSalary(p.monthly_salary); }} className={inp}>
-            <option value="">– Selecionar –</option>
+            <option value="">â€“ Selecionar â€“</option>
             {profiles.map((p) => <option key={p.id} value={p.id}>{p.full_name}</option>)}
           </select>
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Mês">
+          <Field label="MÃªs">
             <select value={month} onChange={(e) => { setMonth(Number(e.target.value)); setResult(null); }} className={inp}>
               {Array.from({ length: 12 }, (_, i) => <option key={i} value={i}>{new Date(2000, i).toLocaleDateString("pt-BR", { month: "long" })}</option>)}
             </select>
@@ -841,29 +863,29 @@ function SalarioTab() {
             </select>
           </Field>
         </div>
-        <Field label="Salário Bruto Base (R$)">
+        <Field label="SalÃ¡rio Bruto Base (R$)">
           <input type="number" min="0" step="0.01" value={salary || ""} onChange={(e) => { setSalary(Number(e.target.value)); setResult(null); }} className={inp} placeholder="0,00" />
         </Field>
         <button disabled={!userId || salary <= 0} onClick={calculate} className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground disabled:opacity-60 transition">
-          Calcular Salário Final
+          Calcular SalÃ¡rio Final
         </button>
       </div>
 
       {result && profile && (
         <div className="rounded-xl border bg-card p-4 space-y-3">
-          <p className="font-semibold text-sm">📊 Demonstrativo: {profile.full_name} · {monthLabel(year, month)}</p>
+          <p className="font-semibold text-sm">ðŸ“Š Demonstrativo: {profile.full_name} Â· {monthLabel(year, month)}</p>
           <div className="space-y-2 text-sm divide-y">
-            <SalRow label="Salário base contratual"    value={fmtBRL(salary)} />
+            <SalRow label="SalÃ¡rio base contratual"    value={fmtBRL(salary)} />
             <SalRow label="Valor hora calculado"      value={fmtBRL(result.hourlyRate)} />
             <SalRow label="Horas extras realizadas"   value={fmtMin(result.extraMinutes)} color="success" />
-            <SalRow label="Horas devedoras do mês"    value={fmtMin(result.debtMinutes)}  color="destructive" />
+            <SalRow label="Horas devedoras do mÃªs"    value={fmtMin(result.debtMinutes)}  color="destructive" />
             <SalRow label="Adicional de extras (+50%)" value={`+ ${fmtBRL(result.extraValue)}`}   color="success" />
-            <SalRow label="Desconto de horas devedoras" value={`− ${fmtBRL(result.debtValue)}`}    color="destructive" />
+            <SalRow label="Desconto de horas devedoras" value={`âˆ’ ${fmtBRL(result.debtValue)}`}    color="destructive" />
           </div>
           <div className="rounded-lg bg-primary/10 p-3.5 flex items-center justify-between border border-primary/20">
             <div>
-              <span className="font-semibold block text-foreground">💰 Salário Final a Pagar</span>
-              <span className="text-xs text-muted-foreground">Líquido calculado com extras e descontos</span>
+              <span className="font-semibold block text-foreground">ðŸ’° SalÃ¡rio Final a Pagar</span>
+              <span className="text-xs text-muted-foreground">LÃ­quido calculado com extras e descontos</span>
             </div>
             <span className="font-mono text-xl font-bold text-primary">{fmtBRL(result.finalSalary)}</span>
           </div>
@@ -873,7 +895,7 @@ function SalarioTab() {
   );
 }
 
-// ─── CONFIGURAÇÕES DA CONTA ADMIN ─────────────────────────────────────────────
+// â”€â”€â”€ CONFIGURAÃ‡Ã•ES DA CONTA ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ConfigTab() {
   const { data: me } = useMe();
@@ -885,13 +907,13 @@ function ConfigTab() {
   const updateAccount = useMutation({
     mutationFn: async () => {
       if (newPass && newPass !== confirmPass) {
-        throw new Error("As senhas não coincidem.");
+        throw new Error("As senhas nÃ£o coincidem.");
       }
 
       // Atualiza no localStorage
       updateStoredAdminCredentials(newUsername, newUsername ? `${newUsername}@admin.local` : "", newPass);
 
-      // Tenta atualizar no Supabase se logado por lá
+      // Tenta atualizar no Supabase se logado por lÃ¡
       try {
         if (newUsername) {
           const email = newUsername.includes("@") ? newUsername : `${newUsername}@admin.local`;
@@ -916,16 +938,16 @@ function ConfigTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="font-semibold">Troca de Usuário e Senha do Administrador</h2>
+      <h2 className="font-semibold">Troca de UsuÃ¡rio e Senha do Administrador</h2>
       <div className="rounded-xl border bg-muted/40 p-4 text-sm space-y-1">
-        <p className="text-xs text-muted-foreground">Usuário Admin Atual</p>
+        <p className="text-xs text-muted-foreground">UsuÃ¡rio Admin Atual</p>
         <p className="font-mono font-medium">{me?.user.email?.replace("@admin.local", "") || "admin"}</p>
       </div>
 
       <section className="rounded-xl border bg-card p-4 space-y-3">
         <h3 className="text-sm font-semibold">Alterar Dados de Acesso</h3>
-        <Field label="Novo Usuário (Login)">
-          <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className={inp} placeholder="Digite o novo usuário admin" />
+        <Field label="Novo UsuÃ¡rio (Login)">
+          <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} className={inp} placeholder="Digite o novo usuÃ¡rio admin" />
         </Field>
 
         <Field label="Nova Senha">
@@ -945,14 +967,14 @@ function ConfigTab() {
           onClick={() => updateAccount.mutate()}
           className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60 transition"
         >
-          {updateAccount.isPending ? "Salvando…" : "Salvar Novas Credenciais"}
+          {updateAccount.isPending ? "Salvandoâ€¦" : "Salvar Novas Credenciais"}
         </button>
       </section>
     </div>
   );
 }
 
-// ─── Helpers compartilhados ───────────────────────────────────────────────────
+// â”€â”€â”€ Helpers compartilhados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const inp = "w-full rounded-lg border bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40";
 
