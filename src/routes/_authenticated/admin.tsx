@@ -486,11 +486,11 @@ function HistoricoTab() {
     mutationFn: async () => {
       if (!addUserId) throw new Error("Selecione o tecnico.");
       const [h = 0, m = 0] = addTime.split(":").map(Number);
-      const [y, mon, d] = addDate.split("-").map(Number);
+      const [y = 1970, mon = 1, d = 1] = addDate.split("-").map(Number);
       const recorded = new Date(y, mon - 1, d, h, m, 0).toISOString();
 
       const newEntry: Entry = {
-        id: "entry_" + Date.now(),
+        id: crypto.randomUUID(),
         user_id: addUserId,
         kind: addKind,
         recorded_at: recorded,

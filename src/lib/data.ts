@@ -162,7 +162,7 @@ export function useMe() {
         user,
         profile: (profile ?? {
           id: user.id,
-          full_name: user.user_metadata?.full_name || "Usuario",
+          full_name: user.user_metadata?.["full_name"] || "Usuario",
           email: user.email || null,
           daily_minutes: 480,
           lunch_minutes: 60,
