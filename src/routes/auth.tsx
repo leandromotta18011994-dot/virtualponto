@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ADMIN_EMAIL, toAuthPassword, toLoginEmail } from "@/lib/auth-creds";
+import { ensureAdminAccount } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
