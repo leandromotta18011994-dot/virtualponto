@@ -18,7 +18,7 @@ import {
   dayKey, fmtMin, fmtTime, fmtBRL, groupByDay, KIND_LABEL,
   getBusinessDays, calcSalary, monthLabel, type Entry, type EntryKind,
 } from "@/lib/time";
-import { updateStoredAdminCredentials } from "../auth";
+import { toAuthPassword } from "@/lib/auth-creds";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin - Virtual Ponto" }] }),
@@ -997,7 +997,6 @@ function ConfigTab() {
         throw new Error("As senhas nao coincidem.");
       }
 
-      updateStoredAdminCredentials(newUsername, newUsername ? `${newUsername}@admin.local` : "", newPass);
 
       try {
         if (newUsername) {
@@ -1008,7 +1007,7 @@ function ConfigTab() {
           }
         }
         if (newPass) {
-          await supabase.auth.updateUser({ password: newPass });
+          await supabase.auth.updateUser({ password: toAuthPassword(newPass) });
         }
       } catch {}
     },

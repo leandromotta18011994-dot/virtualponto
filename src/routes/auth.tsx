@@ -50,20 +50,10 @@ function Auth() {
   const [loading, setLoading]       = useState(false);
 
   useEffect(() => {
-    const localAdmin = localStorage.getItem("vp_is_admin_session");
-    if (localAdmin === "true") {
-      navigate({ to: "/admin" });
-      return;
-    }
-
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/ponto" });
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (s) navigate({ to: "/ponto" });
-    });
-    return () => data.subscription.unsubscribe();
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
