@@ -143,6 +143,7 @@ function UsuariosTab() {
   const [editProfile, setEditProfile] = useState<Profile | null>(null);
   const [form, setForm]             = useState(emptyForm);
   const [showPass, setShowPass]     = useState(false);
+  const createEmployeeFn = useServerFn(createEmployee);
 
   const openCreate = () => { setForm(emptyForm); setEditProfile(null); setShowForm(true); };
   const openEdit = (p: Profile) => {
@@ -153,33 +154,18 @@ function UsuariosTab() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      const email = form.email.includes("@") ? form.email : `${form.email}@admin.local`;
-      let createdId = "u_" + Date.now();
-      try {
-        const { data, error } = await supabase.functions.invoke("create-user", {
-          body: { email, password: form.password, full_name: form.full_name, role: form.role },
-        });
-        if (!error && (data as any)?.user?.id) {
-          createdId = (data as any).user.id;
-          await supabase.from("profiles").update({ daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", createdId);
-        }
-      } catch {}
-
-      const newProfile: Profile = {
-        id: createdId,
-        full_name: form.full_name,
-        email,
-        daily_minutes: form.daily_minutes,
-        lunch_minutes: form.lunch_minutes,
-        monthly_salary: form.monthly_salary,
-        work_schedule_id: form.work_schedule_id || null,
-        is_active: true,
-      };
-
-      const stored = localStorage.getItem("vp_team_profiles");
-      const list = stored ? JSON.parse(stored) : [];
-      list.push({ ...newProfile, password: form.password, username: form.email });
-      localStorage.setItem("vp_team_profiles", JSON.stringify(list));
+      await createEmployeeFn({
+        data: {
+          username: form.email,
+          password: form.password,
+          full_name: form.full_name,
+          role: form.role === "gestor" ? "gestor" : "funcionario",
+          daily_minutes: form.daily_minutes,
+          lunch_minutes: form.lunch_minutes,
+          monthly_salary: form.monthly_salary,
+          work_schedule_id: form.work_schedule_id || null,
+        },
+      });
     },
     onSuccess: () => {
       toast.success("Usuario criado com sucesso!");
