@@ -7,15 +7,6 @@ import { useMe } from "@/lib/data";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async () => {
-    // Permite passagem se houver sessão local admin ou usuário autenticado
-    if (typeof window !== "undefined") {
-      const isLocalAdmin = localStorage.getItem("vp_is_admin_session") === "true";
-      const hasLocalUser = localStorage.getItem("vp_current_user");
-      if (isLocalAdmin || hasLocalUser) {
-        return;
-      }
-    }
-
     const { data } = await supabase.auth.getUser();
     if (!data.user) {
       throw redirect({ to: "/auth" });

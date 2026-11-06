@@ -1,3 +1,5 @@
+import { useServerFn } from "@tanstack/react-start";
+import { createEmployee } from "@/lib/users.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,7 +18,7 @@ import {
   dayKey, fmtMin, fmtTime, fmtBRL, groupByDay, KIND_LABEL,
   getBusinessDays, calcSalary, monthLabel, type Entry, type EntryKind,
 } from "@/lib/time";
-import { updateStoredAdminCredentials } from "../auth";
+import { toAuthPassword } from "@/lib/auth-creds";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin - Virtual Ponto" }] }),
@@ -143,6 +145,7 @@ function UsuariosTab() {
   const [editProfile, setEditProfile] = useState<Profile | null>(null);
   const [form, setForm]             = useState(emptyForm);
   const [showPass, setShowPass]     = useState(false);
+  const createEmployeeFn = useServerFn(createEmployee);
 
   const openCreate = () => { setForm(emptyForm); setEditProfile(null); setShowForm(true); };
   const openEdit = (p: Profile) => {
@@ -153,33 +156,18 @@ function UsuariosTab() {
 
   const createUser = useMutation({
     mutationFn: async () => {
-      const email = form.email.includes("@") ? form.email : `${form.email}@admin.local`;
-      let createdId = "u_" + Date.now();
-      try {
-        const { data, error } = await supabase.functions.invoke("create-user", {
-          body: { email, password: form.password, full_name: form.full_name, role: form.role },
-        });
-        if (!error && (data as any)?.user?.id) {
-          createdId = (data as any).user.id;
-          await supabase.from("profiles").update({ daily_minutes: form.daily_minutes, lunch_minutes: form.lunch_minutes, monthly_salary: form.monthly_salary, work_schedule_id: form.work_schedule_id || null }).eq("id", createdId);
-        }
-      } catch {}
-
-      const newProfile: Profile = {
-        id: createdId,
-        full_name: form.full_name,
-        email,
-        daily_minutes: form.daily_minutes,
-        lunch_minutes: form.lunch_minutes,
-        monthly_salary: form.monthly_salary,
-        work_schedule_id: form.work_schedule_id || null,
-        is_active: true,
-      };
-
-      const stored = localStorage.getItem("vp_team_profiles");
-      const list = stored ? JSON.parse(stored) : [];
-      list.push({ ...newProfile, password: form.password, username: form.email });
-      localStorage.setItem("vp_team_profiles", JSON.stringify(list));
+      await createEmployeeFn({
+        data: {
+          username: form.email,
+          password: form.password,
+          full_name: form.full_name,
+          role: form.role === "gestor" ? "gestor" : "funcionario",
+          daily_minutes: form.daily_minutes,
+          lunch_minutes: form.lunch_minutes,
+          monthly_salary: form.monthly_salary,
+          work_schedule_id: form.work_schedule_id || null,
+        },
+      });
     },
     onSuccess: () => {
       toast.success("Usuario criado com sucesso!");
@@ -498,11 +486,11 @@ function HistoricoTab() {
     mutationFn: async () => {
       if (!addUserId) throw new Error("Selecione o tecnico.");
       const [h = 0, m = 0] = addTime.split(":").map(Number);
-      const [y, mon, d] = addDate.split("-").map(Number);
+      const [y = 1970, mon = 1, d = 1] = addDate.split("-").map(Number);
       const recorded = new Date(y, mon - 1, d, h, m, 0).toISOString();
 
       const newEntry: Entry = {
-        id: "entry_" + Date.now(),
+        id: crypto.randomUUID(),
         user_id: addUserId,
         kind: addKind,
         recorded_at: recorded,
@@ -516,8 +504,8 @@ function HistoricoTab() {
           user_id: newEntry.user_id,
           kind: newEntry.kind,
           recorded_at: newEntry.recorded_at,
-          edited_at: newEntry.edited_at,
-          note: newEntry.note,
+          edited_at: newEntry.edited_at ?? null,
+          note: newEntry.note ?? null,
         });
       } catch {}
 
@@ -1009,7 +997,6 @@ function ConfigTab() {
         throw new Error("As senhas nao coincidem.");
       }
 
-      updateStoredAdminCredentials(newUsername, newUsername ? `${newUsername}@admin.local` : "", newPass);
 
       try {
         if (newUsername) {
@@ -1020,7 +1007,7 @@ function ConfigTab() {
           }
         }
         if (newPass) {
-          await supabase.auth.updateUser({ password: newPass });
+          await supabase.auth.updateUser({ password: toAuthPassword(newPass) });
         }
       } catch {}
     },

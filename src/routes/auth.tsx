@@ -2,6 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ADMIN_EMAIL, toAuthPassword, toLoginEmail } from "@/lib/auth-creds";
+import { ensureAdminAccount } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -48,92 +50,33 @@ function Auth() {
   const [loading, setLoading]       = useState(false);
 
   useEffect(() => {
-    const localAdmin = localStorage.getItem("vp_is_admin_session");
-    if (localAdmin === "true") {
-      navigate({ to: "/admin" });
-      return;
-    }
-
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/ponto" });
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => {
-      if (s) navigate({ to: "/ponto" });
-    });
-    return () => data.subscription.unsubscribe();
   }, [navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const cleanInput = loginInput.trim();
-    const adminCreds = getStoredAdminCredentials();
-
-    const isAdminMatch =
-      cleanInput.toLowerCase() === adminCreds.username.toLowerCase() ||
-      cleanInput.toLowerCase() === adminCreds.email.toLowerCase() ||
-      (cleanInput.toLowerCase() === "admin" && adminCreds.username === "admin");
-
-    if (isAdminMatch && password === adminCreds.password) {
-      localStorage.setItem("vp_is_admin_session", "true");
-      localStorage.setItem(
-        "vp_current_user",
-        JSON.stringify({
-          id: "admin-root-id",
-          full_name: "Administrador",
-          email: adminCreds.email,
-          role: "gestor",
-          daily_minutes: 480,
-          lunch_minutes: 60,
-        })
-      );
-
-      try {
-        const loginEmail = adminCreds.email.includes("@") ? adminCreds.email : `${adminCreds.email}@admin.local`;
-        await supabase.auth.signInWithPassword({ email: loginEmail, password });
-      } catch {}
-
-      toast.success("Acesso Administrador liberado!");
-      navigate({ to: "/admin" });
-      setLoading(false);
-      return;
+    localStorage.removeItem("vp_is_admin_session");
+    localStorage.removeItem("vp_current_user");
+    const email = toLoginEmail(loginInput);
+    if (email === ADMIN_EMAIL) {
+      try { await ensureAdminAccount(); } catch {}
     }
-
-    const loginEmail = cleanInput.includes("@") ? cleanInput : `${cleanInput}@admin.local`;
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password,
+      email,
+      password: toAuthPassword(password),
     });
 
     if (error || !data.user) {
-      const localUsersRaw = localStorage.getItem("vp_team_profiles");
-      if (localUsersRaw) {
-        try {
-          const list = JSON.parse(localUsersRaw);
-          const found = list.find(
-            (u: any) =>
-              (u.email?.toLowerCase() === cleanInput.toLowerCase() ||
-               u.username?.toLowerCase() === cleanInput.toLowerCase()) &&
-              u.password === password
-          );
-          if (found) {
-            localStorage.setItem("vp_current_user", JSON.stringify(found));
-            localStorage.removeItem("vp_is_admin_session");
-            toast.success(`Bem-vindo, ${found.full_name}!`);
-            navigate({ to: "/ponto" });
-            setLoading(false);
-            return;
-          }
-        } catch {}
-      }
-
       toast.error("Usuario ou senha invalidos.");
     } else {
-      localStorage.removeItem("vp_is_admin_session");
+      const { data: isGestor } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "gestor" });
       toast.success("Login realizado!");
-      navigate({ to: "/ponto" });
+      navigate({ to: isGestor ? "/admin" : "/ponto" });
     }
 
     setLoading(false);
