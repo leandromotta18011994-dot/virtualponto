@@ -504,8 +504,8 @@ function HistoricoTab() {
           user_id: newEntry.user_id,
           kind: newEntry.kind,
           recorded_at: newEntry.recorded_at,
-          edited_at: newEntry.edited_at,
-          note: newEntry.note,
+          edited_at: newEntry.edited_at ?? null,
+          note: newEntry.note ?? null,
         });
       } catch {}
 
