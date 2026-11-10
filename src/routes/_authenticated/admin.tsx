@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import {
   LayoutDashboard, Users, Settings, Clock, History, TrendingUp,
   DollarSign, Plus, Pencil, Trash2, X, Check, Eye, EyeOff,
-  Download, Database, Mail, RefreshCw
+  Download, Database, Mail, RefreshCw,
  Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
