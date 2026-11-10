@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
 function Index() {
   const items = [
     { icon: Clock, t: "Ponto em um toque", d: "Entrada e saida com horario do servidor." },
-    { icon: Coffee, t: "Horario de almoco", d: "Pausa registrada e descontada automaticamente." },
+    { icon: Coffee, t: "Horário de almoço", d: "Pausa registrada e descontada automaticamente." },
     { icon: TrendingUp, t: "Horas extras", d: "Saldo diario e banco de horas acumulado." },
     { icon: Users, t: "Painel do gestor", d: "Jornada por funcionario e visao da equipe." },
   ];

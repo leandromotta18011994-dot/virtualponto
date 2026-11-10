@@ -72,7 +72,7 @@ function Auth() {
     });
 
     if (error || !data.user) {
-      toast.error("Usuario ou senha invalidos.");
+      toast.error("Usuário ou senha inválidos.");
     } else {
       const { data: isGestor } = await supabase.rpc("has_role", { _user_id: data.user.id, _role: "gestor" });
       toast.success("Login realizado!");
@@ -92,11 +92,11 @@ function Auth() {
 
       <form onSubmit={submit} className="mt-8 space-y-4">
         <div>
-          <label className="text-xs text-muted-foreground mb-1 block">Usuario</label>
+          <label className="text-xs text-muted-foreground mb-1 block">Usuário</label>
           <input
             required
             autoComplete="username"
-            placeholder="Usuario"
+            placeholder="Usuário"
             value={loginInput}
             onChange={(e) => setLoginInput(e.target.value)}
             className={inp}
