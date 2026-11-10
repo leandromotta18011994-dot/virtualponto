@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, Settings, Clock, History, TrendingUp,
   DollarSign, Plus, Pencil, Trash2, X, Check, Eye, EyeOff,
   Download, Database, Mail, RefreshCw
+ Upload,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -945,6 +946,63 @@ function BackupTab() {
     }, "image/jpeg", 0.92);
   };
 
+  const qcImport = useQueryClient();
+  const [importing, setImporting] = useState(false);
+  const importFile = async (file: File) => {
+    setImporting(true);
+    try {
+      const text = await file.text();
+      const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+      const byName = new Map(profiles.map((p) => [norm(p.full_name), p.id]));
+      const kindOf = (v: string): EntryKind | null => {
+        const k = norm(v).replace(/\s+/g, "_");
+        if (k.startsWith("entrada")) return "entrada";
+        if (k.includes("volta")) return "volta_almoco";
+        if (k.includes("saida_almoco") || k.includes("saida_alm")) return "saida_almoco";
+        if (k.startsWith("saida")) return "saida";
+        return null;
+      };
+      const rows: { user_id: string; kind: EntryKind; recorded_at: string; note: string | null }[] = [];
+      let skipped = 0;
+      if (file.name.toLowerCase().endsWith(".json")) {
+        const data = JSON.parse(text);
+        const list: any[] = Array.isArray(data) ? data : data.time_entries ?? [];
+        const ids = new Set(profiles.map((p) => p.id));
+        for (const e of list) {
+          const uid = ids.has(e.user_id) ? e.user_id : byName.get(norm(e.funcionario ?? e.full_name ?? ""));
+          const kind = kindOf(String(e.kind ?? e.tipo ?? ""));
+          if (!uid || !kind || !e.recorded_at) { skipped++; continue; }
+          rows.push({ user_id: uid, kind, recorded_at: new Date(e.recorded_at).toISOString(), note: e.note ?? "[Importado]" });
+        }
+      } else {
+        const lines = text.split(/\r?\n/).filter((l) => l.trim());
+        const sep = lines[0]?.includes(";") ? ";" : ",";
+        for (const [i, line] of lines.entries()) {
+          const [nome = "", data = "", hora = "", tipo = "", obs = ""] = line.split(sep).map((c) => c.replace(/^"|"$/g, "").trim());
+          if (i === 0 && norm(nome).startsWith("funcion")) continue;
+          const uid = byName.get(norm(nome));
+          const kind = kindOf(tipo);
+          const m = data.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/) ?? data.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+          if (!uid || !kind || !m) { skipped++; continue; }
+          const [y, mo, d] = data.includes("/") ? [m[3], m[2], m[1]] : [m[1], m[2], m[3]];
+          const dt = new Date(`${y}-${mo!.padStart(2, "0")}-${d!.padStart(2, "0")}T${(hora || "00:00").padStart(5, "0")}:00`);
+          if (isNaN(dt.getTime())) { skipped++; continue; }
+          rows.push({ user_id: uid, kind, recorded_at: dt.toISOString(), note: obs || "[Importado]" });
+        }
+      }
+      if (rows.length === 0) { toast.error("Nenhum registro válido encontrado no arquivo."); return; }
+      const { error } = await supabase.from("time_entries").insert(rows);
+      if (error) throw error;
+      qcImport.invalidateQueries({ queryKey: ["team_entries"] });
+      qcImport.invalidateQueries({ queryKey: ["entries"] });
+      toast.success(`${rows.length} registros importados${skipped ? ` (${skipped} ignorados)` : ""}.`);
+    } catch {
+      toast.error("Não foi possível importar o arquivo.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const sendByEmail = () => {
     if (!googleEmail || !googleEmail.includes("@")) {
       toast.error("Informe um e-mail válido.");
@@ -984,6 +1042,25 @@ function BackupTab() {
         >
           <Download className="h-4 w-4" /> Baixar cópia completa
         </button>
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Upload className="h-5 w-5 text-primary" />
+          <h3 className="text-sm font-semibold">Importar registros de funcionários</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Recupere registros perdidos a partir de uma planilha (CSV) com as colunas: Funcionário, Data, Hora, Tipo, Observação. Também aceita cópias antigas (.json). O funcionário precisa estar cadastrado com o mesmo nome.
+        </p>
+        <label className={`w-full flex items-center justify-center gap-2 rounded-lg border border-primary py-3 font-semibold text-primary cursor-pointer ${importing ? "opacity-60 pointer-events-none" : ""}`}>
+          <Upload className="h-4 w-4" /> {importing ? "Importando..." : "Escolher arquivo"}
+          <input
+            type="file"
+            accept=".csv,.json,text/csv,application/json"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) importFile(f); e.target.value = ""; }}
+          />
+        </label>
       </section>
 
       <section className="rounded-xl border bg-card p-4 space-y-3">
