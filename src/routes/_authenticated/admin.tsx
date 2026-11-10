@@ -908,22 +908,41 @@ function BackupTab() {
   const [googleEmail, setGoogleEmail] = useState(() => (typeof window !== "undefined" ? localStorage.getItem("vp_admin_email") ?? "" : ""));
 
   const downloadLocalBackup = () => {
-    const backupData = {
-      timestamp: new Date().toISOString(),
-      app: "Virtual Ponto",
-      profiles,
-      work_schedules: schedules,
-      time_entries: allEntries,
-    };
-    const jsonStr = JSON.stringify(backupData, null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `backup_virtualponto_${dayKey(new Date())}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Cópia salva no computador.");
+    const nameOf = (id: string) => profiles.find((p) => p.id === id)?.full_name ?? "—";
+    const rows = [...allEntries].sort((a, b) => b.recorded_at.localeCompare(a.recorded_at));
+    const W = 1200, rowH = 34, top = 190;
+    const canvas = document.createElement("canvas");
+    canvas.width = W;
+    canvas.height = top + Math.max(1, rows.length) * rowH + 60;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, canvas.height);
+    ctx.fillStyle = "#111111"; ctx.font = "bold 36px sans-serif";
+    ctx.fillText("Virtual Ponto - Cópia dos registros", 40, 60);
+    ctx.font = "20px sans-serif"; ctx.fillStyle = "#444444";
+    ctx.fillText(`Gerado em ${new Date().toLocaleString("pt-BR")}  •  ${profiles.length} funcionários  •  ${rows.length} registros`, 40, 100);
+    ctx.fillStyle = "#111111"; ctx.font = "bold 20px sans-serif";
+    const cols = [40, 420, 600, 720, 900];
+    ["Funcionário", "Data", "Hora", "Tipo", "Observação"].forEach((h, i) => ctx.fillText(h, cols[i]!, 160));
+    ctx.font = "18px sans-serif";
+    rows.forEach((e, i) => {
+      const y = top + i * rowH;
+      if (i % 2 === 0) { ctx.fillStyle = "#f2f2f2"; ctx.fillRect(30, y - 4, W - 60, rowH); }
+      ctx.fillStyle = "#111111";
+      const d = new Date(e.recorded_at);
+      [nameOf(e.user_id).slice(0, 32), d.toLocaleDateString("pt-BR"), d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), KIND_LABEL[e.kind as keyof typeof KIND_LABEL] ?? e.kind, (e.note ?? "").slice(0, 24)]
+        .forEach((t, j) => ctx.fillText(String(t), cols[j]!, y + 20));
+    });
+    if (rows.length === 0) { ctx.fillStyle = "#444444"; ctx.fillText("Nenhum registro.", 40, top + 20); }
+    canvas.toBlob((blob) => {
+      if (!blob) { toast.error("Não foi possível gerar a imagem."); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup_virtualponto_${dayKey(new Date())}.jpg`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Imagem salva no aparelho.");
+    }, "image/jpeg", 0.92);
   };
 
   const sendByEmail = () => {
@@ -957,7 +976,7 @@ function BackupTab() {
           <h3 className="text-sm font-semibold">Salvar cópia no computador</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Gera um arquivo com todos os funcionários, horários e registros de ponto.
+          Gera uma imagem (JPG) com todos os registros de ponto, fácil de abrir em qualquer celular.
         </p>
         <button
           onClick={downloadLocalBackup}
