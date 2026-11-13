@@ -73,3 +73,22 @@ export const createEmployee = createServerFn({ method: "POST" })
     }
     return { id };
   });
+
+export const deleteEmployee = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => {
+    if (!d || typeof d.id !== "string" || d.id.length < 10) throw new Error("ID inválido");
+    return d;
+  })
+  .handler(async ({ data, context }) => {
+    const { data: isGestor } = await context.supabase.rpc("has_role", { _user_id: context.userId, _role: "gestor" });
+    if (!isGestor) throw new Error("Apenas o administrador pode excluir funcionários.");
+    if (data.id === context.userId) throw new Error("Você não pode excluir a própria conta.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("time_entries").delete().eq("user_id", data.id);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", data.id);
+    await supabaseAdmin.from("profiles").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.id);
+    if (error && !/not found/i.test(error.message)) throw new Error(error.message);
+    return { ok: true };
+  });

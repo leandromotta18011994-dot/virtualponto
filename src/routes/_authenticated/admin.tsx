@@ -1,5 +1,5 @@
 import { useServerFn } from "@tanstack/react-start";
-import { createEmployee } from "@/lib/users.functions";
+import { createEmployee, deleteEmployee } from "@/lib/users.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -148,6 +148,7 @@ function UsuariosTab() {
   const [form, setForm]             = useState(emptyForm);
   const [showPass, setShowPass]     = useState(false);
   const createEmployeeFn = useServerFn(createEmployee);
+  const deleteEmployeeFn = useServerFn(deleteEmployee);
 
   const openCreate = () => { setForm(emptyForm); setEditProfile(null); setShowForm(true); };
   const openEdit = (p: Profile) => {
@@ -202,9 +203,7 @@ function UsuariosTab() {
 
   const deleteProfile = useMutation({
     mutationFn: async (id: string) => {
-      try {
-        await supabase.from("profiles").delete().eq("id", id);
-      } catch {}
+      await deleteEmployeeFn({ data: { id } });
 
       const stored = localStorage.getItem("vp_team_profiles");
       if (stored) {
@@ -212,11 +211,14 @@ function UsuariosTab() {
         localStorage.setItem("vp_team_profiles", JSON.stringify(list));
       }
     },
+    onMutate: (id: string) => {
+      qc.setQueriesData({ queryKey: ["profiles"] }, (old: any) => Array.isArray(old) ? old.filter((p: any) => p.id !== id) : old);
+    },
     onSuccess: () => {
-      toast.success("Usuário excluído.");
+      toast.success("Funcionário excluído.");
       qc.invalidateQueries({ queryKey: ["profiles"] });
     },
-    onError: () => toast.error("Erro ao excluir usuario"),
+    onError: (e: any) => { toast.error(e?.message || "Erro ao excluir funcionário"); qc.invalidateQueries({ queryKey: ["profiles"] }); },
   });
 
   const toggleActive = useMutation({
